@@ -9,6 +9,9 @@ namespace PlatformInvokationWrappings
     {
         public static bool UseUnicode { get; set; } = true;
 
+        /// <summary>
+        /// Toggles the cursor status
+        /// </summary>
         public static void ToggleCursor()
         {
             var current = WinPI.ShowCursor(true);
@@ -25,5 +28,13 @@ namespace PlatformInvokationWrappings
                 WinPI.GetSystemMetrics(SYSTEM_METRICS_INDEX.SM_CYSCREEN)
             );
 
+        public static void SetMousePos(int x, int y)
+            => WinPI.SetCursorPos(x, y);
+
+        public static Structs.POINT<int> GetMousePos()
+        {
+            WinPI.GetCursorPos(out var p);
+            return p;
+        }
     }
 }
