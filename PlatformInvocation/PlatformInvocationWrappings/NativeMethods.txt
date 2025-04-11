@@ -11,6 +11,8 @@ GetKeyState
 BlockInput
 SetCursorPos
 GetCursorPos
+LoadCursorFromFile
+SetSystemCursor
 ClipCursor
 DeviceIoControl
 CreateFileW
@@ -107,3 +109,4 @@ SleepEx
 LoadLibraryW
 FreeLibrary
 GetCursorInfo
+GetModuleHandle

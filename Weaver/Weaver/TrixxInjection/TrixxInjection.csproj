@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project Sdk="Microsoft.NET.Sdk">
+	<PropertyGroup>
+		<TargetFrameworks>net452;netstandard2.0;netstandard2.1</TargetFrameworks>
+		<SignAssembly>true</SignAssembly>
+		<Authors>Trixxit</Authors>
+		<Copyright>Copyright $([System.DateTime]::UtcNow.ToString(yyyy)).</Copyright>
+		<Description>Injects a new type that writes "Hello World".</Description>
+		<PackageLicenseExpression>MIT</PackageLicenseExpression>
+		<PackageTags>Debugging, RemoveBoilerplate, ILWeaving, Fody, Cecil, AOP</PackageTags>
+		<PackageOutputPath>$(SolutionDir)../nugets</PackageOutputPath>
+	</PropertyGroup>
+	<ItemGroup>
+		<PackageReference Include="Fody" Version="6.6.4" PrivateAssets="none" />
+		<PackageReference Include="FodyPackaging" Version="6.6.4" PrivateAssets="All" />
+	</ItemGroup>
+</Project>
