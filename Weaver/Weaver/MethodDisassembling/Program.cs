@@ -1,10 +1,11 @@
 ﻿using System.Diagnostics;
+using TrixxInjection;
 
 namespace MethodDisassembling
 {
     internal class Program
     {
-        private static Class @class;
+        private static Class? @class;
 
         static void Main(string[] args)
         {
@@ -13,10 +14,11 @@ namespace MethodDisassembling
             @class.RunStopWatcher();
         }
 
+        [MethodLogger]
         private static void M2()
         {
-            @class.RunStopWatcher();
-    }
+            @class?.RunStopWatcher();
+        }
 
         public class Class
         {
@@ -26,6 +28,7 @@ namespace MethodDisassembling
                 M2();
             }
 
+            [Sand]
             public void RunStopWatcher()
             {
                 var stopwatcher = new Stopwatch();
@@ -36,4 +39,15 @@ namespace MethodDisassembling
             }
         }
     }
+
+    [Flags]
+    public enum OmO
+    {
+        one,
+        two,
+        three,
+        four
+    }
+
+    public class Sand : Attribute;
 }

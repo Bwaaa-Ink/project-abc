@@ -1,5 +1,7 @@
 ﻿#define DIAGNOSTICS
+#define TYPES
 
+using System;
 using Fody;
 using Mono.Cecil.Rocks;
 using Mono.Cecil;
@@ -27,39 +29,46 @@ namespace TrixxInjection.Fody
 
         public override void Execute()
         {
-#if DIAGNOSTICS
             StringBuilder sb = new StringBuilder();
-            sb.AppendLine($"START OF DIAGNOSTICS");
+#if DIAGNOSTICS
 
-            #region ASSEMBLY
-
+            sb._($"START OF DIAGNOSTICS");
             var a = ModuleDefinition.Assembly;
-            sb.Lass(a)._("[References Assemblies]");
+            sb.Lass(a)._("[Referenced Assemblies]");
 
             int count = 0;
             foreach (var mdar in ModuleDefinition.AssemblyReferences)
             {
                 sb._($"ASM: {++count}");
                 IndentLevel++;
-                sb.Lass(ModuleDefinition.AssemblyResolver.Resolve(mdar));
+                var ass = ModuleDefinition.AssemblyResolver.Resolve(mdar);
+                if (ass != null)
+                {
+                    sb.Lass(ass);
+                }
                 IndentLevel--;
             }
 
-            sb._("[END OF REFERENCE ASSEMBLIES]")
-                ._("[START OF IMPLEMENTED TYPES]");
+            sb._("[END OF REFERENCE ASSEMBLIES]");
+#if TYPES
+            sb._("[START OF IMPLEMENTED TYPES]");
             count = 0;
+            IndentLevel++;
             foreach (var td in ModuleDefinition.Types)
             {
                 sb._($"TYPE: {++count}");
-                IndentLevel++;
-                
-                IndentLevel--;
+                if (td != null)
+                    sb.Lyte(td);
             }
-
-
-            #endregion
+            IndentLevel--;
+#endif
+            sb._($"END OF DIAGNOSTICS");
 
 #endif
+
+
+
+            File.WriteAllText(@"C:/Logs/Diagnostic_Test.txt", sb.ToString());
         }
 
         public override IEnumerable<string> GetAssembliesForScanning()
