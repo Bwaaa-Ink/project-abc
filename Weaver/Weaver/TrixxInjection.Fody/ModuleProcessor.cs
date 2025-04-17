@@ -90,7 +90,7 @@ namespace TrixxInjection.Fody
             var startNewMethod = ModuleDefinition.ImportReference(typeof(Stopwatch).GetMethod("StartNew"));
             var stopMethod = ModuleDefinition.ImportReference(typeof(Stopwatch).GetMethod("Stop"));
             var getElapsedMethod = ModuleDefinition.ImportReference(typeof(Stopwatch).GetProperty("Elapsed").GetGetMethod());
-            var logMethod = ModuleDefinition.ImportReference(typeof(AttributeCallFunctions).GetMethod("LogString"));
+            //var logMethod = ModuleDefinition.ImportReference(typeof(AttributeCallFunctions).GetMethod("LogString"));
             var stateMachineType = moveNext.DeclaringType;
             var stopwatchField = stateMachineType.Fields.FirstOrDefault(f => f.Name == "__methodStopwatch");
             if (stopwatchField == null)
@@ -124,7 +124,7 @@ namespace TrixxInjection.Fody
                 il.Create(OpCodes.Ldarg_0),
                 il.Create(OpCodes.Ldfld, stopwatchField),
                 il.Create(OpCodes.Call, getElapsedMethod),
-                il.Create(OpCodes.Call, logMethod)
+                //il.Create(OpCodes.Call, logMethod)
             };
                 foreach (var instr in beforeRet)
                     il.InsertBefore(ret, instr);

@@ -16,7 +16,8 @@ namespace TrixxInjection
 
         internal static bool? GetOutput(out StreamWriter sw)
         {
-
+            sw = null;
+            return null;
         }
 
         /// <summary>
