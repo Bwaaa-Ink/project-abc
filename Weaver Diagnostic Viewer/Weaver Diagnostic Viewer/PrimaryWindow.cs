@@ -9,5 +9,10 @@ namespace Weaver_Diagnostic_Viewer
 {
     public class PrimaryWindow : Window
     {
+        internal MetadataStructs.Assembly[] Assemblies { get; init; }
+        public PrimaryWindow()
+        {
+            
+        }
     }
 }
