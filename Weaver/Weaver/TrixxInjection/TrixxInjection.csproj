@@ -9,11 +9,18 @@
 		<PackageLicenseExpression>MIT</PackageLicenseExpression>
 		<PackageTags>Debugging, RemoveBoilerplate, ILWeaving, Fody, Cecil, AOP</PackageTags>
 		<PackageOutputPath>$(SolutionDir)../nugets</PackageOutputPath>
-		<Version>1.1.2</Version>
-		<PackageReleaseNotes>Added Full type logging, including methods. (Null check additions)</PackageReleaseNotes>
+		<Version>1.1.30</Version>
+		<PackageReleaseNotes>
+			[ STABLE ] Full automatic JSON diagnostic serialisation without sizing.
+		</PackageReleaseNotes>
+		<RunPostBuildEvent>OnOutputUpdated</RunPostBuildEvent>
+		<DebugType>portable</DebugType>
 	</PropertyGroup>
 	<ItemGroup>
 		<PackageReference Include="Fody" Version="6.6.4" PrivateAssets="none" />
 		<PackageReference Include="FodyPackaging" Version="6.6.4" PrivateAssets="All" />
 	</ItemGroup>
+	<Target Name="CopyLatestPackage" AfterTargets="Pack">
+	  <Exec Command="call &quot;$(SolutionDir)../nugets/weaverCopy.bat&quot;" />
+	</Target>
 </Project>

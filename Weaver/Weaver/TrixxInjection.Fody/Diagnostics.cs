@@ -41,7 +41,7 @@ namespace TrixxInjection.Fody
             try { sb._(type.HasNestedTypes ? $"Nested Types: " + string.Join("\n " + _indent, type.NestedTypes.Select(n => sb.Lyte(n))) : "No Nested Types."); } catch (NullReferenceException) { sb._("type.NestedTypes or n.FullName was null."); }
 
             IndentLevel--;
-            try { sb._(type.HasMethods ? Leths(type.Methods.ToArray(), false) : "No Methods."); } catch (NullReferenceException) { sb._("type.Methods was null."); }
+            try { sb._(type.HasMethods ? Leths(type.Methods.ToArray(), false) : "No Methods."); } catch (NullReferenceException ex) { sb._($"type.Methods was null. {ex.Message}"); }
 
             try { sb._(type.HasCustomAttributes ? "Custom Attributes: " + string.Join(", ", type.CustomAttributes.Select(a => a.AttributeType.FullName)) : "Has no Custom Attributes"); } catch (NullReferenceException) { sb._("type.CustomAttributes or a.AttributeType.FullName was null."); }
 
@@ -66,33 +66,78 @@ namespace TrixxInjection.Fody
         {
             if (includeType)
             {
-                sb._($"Enclosing Type: {meth.DeclaringType.FullName}");
+                try { sb._($"Enclosing Type: {meth.DeclaringType.FullName}"); }
+                catch (NullReferenceException) { sb._("the method's DeclaringType was null, continuing."); }
             }
 
-            sb._($"Method: {meth.Name}");
+            try { sb._($"Method: {meth.Name}"); }
+            catch (NullReferenceException) { sb._("the method's Name was null, continuing."); }
+
             IndentLevel++;
-            sb._($"Method Number: {meth.DeclaringType.Methods.IndexOf(meth.DeclaringType.Methods.First(m => m.FullName == meth.FullName))}")
-            ._("Method Attributes, Implementation Attributes and Semantic attributes: " + string.Join(", ",
-                Extensions.GetFlagNames<MethodAttributes>((ushort)meth.Attributes).Concat(
-                    Extensions.GetFlagNames<MethodImplAttributes>((ushort)meth.ImplAttributes)
-                    ).Concat(
-                    Extensions.GetFlagNames<MethodSemanticsAttributes>((ushort)meth.SemanticsAttributes)
-                    )
-                ))
-            ._(meth.HasCustomAttributes ? string.Join(", ", meth.CustomAttributes.Select(a => a.AttributeType.FullName)) : "Has no Custom Attributes")
-            ._($"RVA: {meth.RVA}")
-            ._(meth.HasBody ? $" Max Stack Size: {meth.Body.MaxStackSize}\n" +
-                              $"{_indent} Token: {meth.Body.LocalVarToken.ToUInt32()}\n" +
-                              $"{_indent} Max Code Size: {meth.Body.CodeSize}\n" +
-                              $"{_indent} ({(meth.Body.HasExceptionHandlers ? string.Join("\n{_indent} ", meth.Body.ExceptionHandlers.Select(eh => $" Catching: {eh.CatchType.FullName}\n{_indent}  Type: {eh.HandlerType}")) : $"Body contains no Exception Handling.")})\n" +
-                              (meth.Body.HasVariables ? $"{_indent} Variables\n{_indent}  " + string.Join($"\n{_indent}  ", meth.Body.Variables.Select(v => $"{v.VariableType.FullName}, #{v.Index}")) : $"{_indent} Contains no variables.")
-                : $"{_indent} Method has no body.")
-            ._(meth.HasPInvokeInfo ? $"PInvoke Data:\n{_indent} Containing Module: {meth.PInvokeInfo.Module.Name}\n{_indent} Entry Point: {meth.PInvokeInfo.EntryPoint}\n{_indent} Tags: {string.Join(", ", Extensions.GetFlagNames<PInvokeAttributes>(meth.PInvokeInfo.Attributes))}" : "Method has no PInvoke data.")
-            ._(meth.HasGenericParameters ? $"{_indent} Generics:\n{_indent} " + string.Join($"\n{_indent}  ", meth.GenericParameters.Select(gp => $"Unimplemented (was lazy)")) : "Method has no Generic Parameters.")
-            ._($"Has Overrides: {meth.HasOverrides}");
+
+            try
+            {
+                var index = meth.DeclaringType.Methods.IndexOf(
+                    meth.DeclaringType.Methods.First(m => m.FullName == meth.FullName));
+                sb._($"Method Number: {index}");
+            }
+            catch (NullReferenceException) { sb._("the method's Method Number was null, continuing."); }
+
+            try
+            {
+                sb._("Method Attributes, Implementation Attributes and Semantic attributes: " +
+                     string.Join(", ",
+                         Extensions.GetFlagNames<MethodAttributes>((ushort)meth.Attributes)
+                             .Concat(Extensions.GetFlagNames<MethodImplAttributes>((ushort)meth.ImplAttributes))
+                             .Concat(Extensions.GetFlagNames<MethodSemanticsAttributes>((ushort)meth.SemanticsAttributes))));
+            }
+            catch (NullReferenceException) { sb._("the method's Attributes were null, continuing."); }
+
+            try
+            {
+                sb._(meth.HasCustomAttributes
+                    ? string.Join(", ", meth.CustomAttributes.Select(a => a.AttributeType.FullName))
+                    : "Has no Custom Attributes");
+            }
+            catch (NullReferenceException) { sb._("the method's CustomAttributes were null, continuing."); }
+
+            try { sb._($"RVA: {meth.RVA}"); }
+            catch (NullReferenceException) { sb._("the method's RVA was null, continuing."); }
+
+            try
+            {
+                sb._(meth.HasBody
+                    ? $" Max Stack Size: {meth.Body.MaxStackSize}\n{_indent} Token: {meth.Body.LocalVarToken.ToUInt32()}\n" +
+                      $"{_indent} Max Code Size: {meth.Body.CodeSize}\n" +
+                      $"{_indent} ({(meth.Body.HasExceptionHandlers ? string.Join($"\n{_indent} ", meth.Body.ExceptionHandlers.Select(eh => $" Catching: {eh.CatchType.FullName}\n{_indent}  Type: {eh.HandlerType}")) : "Body contains no Exception Handling.")})\n" +
+                      (meth.Body.HasVariables ? $"{_indent} Variables\n{_indent}  " + string.Join($"\n{_indent}  ", meth.Body.Variables.Select(v => $"{v.VariableType.FullName}, #{v.Index}")) : $"{_indent} Contains no variables.")
+                    : $"{_indent} Method has no body.");
+            }
+            catch (NullReferenceException) { sb._("the method's Body was null, continuing."); }
+
+            try
+            {
+                sb._(meth.HasPInvokeInfo
+                    ? $"PInvoke Data:\n{_indent} Containing Module: {meth.PInvokeInfo.Module.Name}\n{_indent} Entry Point: {meth.PInvokeInfo.EntryPoint}\n{_indent} Tags: {string.Join(", ", Extensions.GetFlagNames<PInvokeAttributes>(meth.PInvokeInfo.Attributes))}"
+                    : "Method has no PInvoke data.");
+            }
+            catch (NullReferenceException) { sb._("the method's PInvokeInfo was null, continuing."); }
+
+            try
+            {
+                sb._(meth.HasGenericParameters
+                    ? $"{_indent} Generics:\n{_indent} " + string.Join($"\n{_indent}  ", meth.GenericParameters.Select(gp => "Unimplemented (was lazy)"))
+                    : "Method has no Generic Parameters.");
+            }
+            catch (NullReferenceException) { sb._("the method's GenericParameters were null, continuing."); }
+
+            try { sb._($"Has Overrides: {meth.HasOverrides}"); }
+            catch (NullReferenceException) { sb._("the method's Overrides were null, continuing."); }
+
             IndentLevel--;
             return sb;
         }
+
 
         public static string Leths(MethodDefinition[] meths, bool includeType = true)
         {

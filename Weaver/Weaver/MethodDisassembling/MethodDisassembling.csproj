@@ -3,12 +3,18 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>net8.0</TargetFramework>
-    <ImplicitUsings>enable</ImplicitUsings>
+	  <DebugType>portable</DebugType>
+	  <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+	  <MaxCpuCount>1</MaxCpuCount>
   </PropertyGroup>
 
-  <ItemGroup>
-    <PackageReference Include="TrixxInjection.Fody" Version="1.1.2" />
-  </ItemGroup>
+	<PropertyGroup>
+		<FodyVerbose>true</FodyVerbose>
+	</PropertyGroup>
+
+	<ItemGroup>
+	  <PackageReference Include="TrixxInjection.Fody" Version="1.1.29" PrivateAssets="All" />
+	</ItemGroup>
 
 </Project>
