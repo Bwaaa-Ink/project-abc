@@ -1,17 +1,17 @@
 ﻿#define DIAGNOSTICS
+//#define ATTACH_DEBUG
 
+using System;
 using Fody;
 using Mono.Cecil.Rocks;
 using Mono.Cecil;
 using System.Collections.Generic;
 using System.Linq;
 using System.IO;
-using System.Reflection;
 using System.Text;
 using Mono.Cecil.Cil;
 using static TrixxInjection.Fody.ModuleWeaverHelpers;
 using MethodAttributes = Mono.Cecil.MethodAttributes;
-using static TrixxInjection.Fody.Diagnostics;
 
 namespace TrixxInjection.Fody
 {
@@ -22,44 +22,63 @@ namespace TrixxInjection.Fody
 
         public ModuleWeaver()
         {
-            
+            ModuleWeaverHelpers.Weaver = this;
         }
 
         public override void Execute()
         {
-#if DIAGNOSTICS
-            StringBuilder sb = new StringBuilder();
-            sb.AppendLine($"START OF DIAGNOSTICS");
-
-            #region ASSEMBLY
-
-            var a = ModuleDefinition.Assembly;
-            sb.Lass(a)._("[References Assemblies]");
-
-            int count = 0;
-            foreach (var mdar in ModuleDefinition.AssemblyReferences)
-            {
-                sb._($"ASM: {++count}");
-                IndentLevel++;
-                sb.Lass(ModuleDefinition.AssemblyResolver.Resolve(mdar));
-                IndentLevel--;
-            }
-
-            sb._("[END OF REFERENCE ASSEMBLIES]")
-                ._("[START OF IMPLEMENTED TYPES]");
-            count = 0;
-            foreach (var td in ModuleDefinition.Types)
-            {
-                sb._($"TYPE: {++count}");
-                IndentLevel++;
-                
-                IndentLevel--;
-            }
-
-
-            #endregion
-
+#if ATTACH_DEBUG
+            System.Diagnostics.Debugger.Launch();
 #endif
+            try
+            {
+                StringBuilder sb = new StringBuilder();
+#if DIAGNOSTICS
+                sb._("START OF DIAGNOSTICS");
+                WriteInfo("Starting Weaver Diagnostics");
+                WriteInfo("Using Automatic JSON Serialisation");
+                var a = ModuleDefinition.Assembly;
+                sb.AppendLine(
+                    SerializeToJson(
+                        a,
+                        new List<string>()
+                        {
+                            nameof(Instruction.Next),
+                            nameof(Instruction.Previous),
+                            nameof(OpCode.FlowControl),
+                            nameof(OpCode.OpCodeType),
+                            nameof(OpCode.OperandType),
+                            nameof(OpCode.StackBehaviourPop),
+                            nameof(OpCode.StackBehaviourPush),
+                            nameof(Mono.Cecil.ModuleDefinition.TypeSystem),
+                            "PublicKey"
+                        },
+                        new List<string>()
+                        {
+                            nameof(Mono.Cecil.ModuleDefinition.Assembly),
+                        }
+                    )
+                );
+                sb._("END OF DIAGNOSTICS");
+#endif
+                File.WriteAllText("C:/Logs/Diagnostic_Test.txt", sb.ToString());
+            }
+            catch (WeavingException wex)
+            {
+                WriteError(wex.Message);
+            }
+            catch (InvalidOperationException ex)
+            {
+                WriteError($"An invalid operation occured: {ex.Message}   @   {ex.Source}   stacked with   {ex.StackTrace}");
+            }
+            catch (Exception ex)
+            {
+                WriteError($"A {ex.GetType().Name} occured: {ex.Message}   @   {ex.Source}   stacked with   {ex.StackTrace}");
+            }
+            finally
+            {
+                WriteInfo("Weaving Complete.");
+            }
         }
 
         public override IEnumerable<string> GetAssembliesForScanning()

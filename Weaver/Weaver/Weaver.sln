@@ -6,8 +6,14 @@ MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TrixxInjection.Fody", "TrixxInjection.Fody\TrixxInjection.Fody.csproj", "{6D7B9760-1FC3-49EE-B6CB-54D08A29A547}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TrixxInjection", "TrixxInjection\TrixxInjection.csproj", "{31075232-C68F-44D6-AF2D-8F60529EFD8B}"
+	ProjectSection(ProjectDependencies) = postProject
+		{6D7B9760-1FC3-49EE-B6CB-54D08A29A547} = {6D7B9760-1FC3-49EE-B6CB-54D08A29A547}
+	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MethodDisassembling", "MethodDisassembling\MethodDisassembling.csproj", "{57E5A161-F426-447D-AB68-43AF39648201}"
+	ProjectSection(ProjectDependencies) = postProject
+		{31075232-C68F-44D6-AF2D-8F60529EFD8B} = {31075232-C68F-44D6-AF2D-8F60529EFD8B}
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
