@@ -5,6 +5,8 @@ using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using TrixxInjection;
 
+#pragma warning disable
+
 namespace MethodDisassembling
 {
     internal class Program

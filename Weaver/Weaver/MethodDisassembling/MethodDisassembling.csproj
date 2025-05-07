@@ -1,20 +1,31 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-  <PropertyGroup>
-    <OutputType>Exe</OutputType>
-    <TargetFramework>net8.0</TargetFramework>
-	  <DebugType>portable</DebugType>
-	  <ImplicitUsings>enable</ImplicitUsings>
-    <Nullable>enable</Nullable>
-	  <MaxCpuCount>1</MaxCpuCount>
-  </PropertyGroup>
-
 	<PropertyGroup>
+		<OutputType>Exe</OutputType>
+		<TargetFramework>net8.0</TargetFramework>
+		<DebugType>portable</DebugType>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>enable</Nullable>
+		<MaxCpuCount>1</MaxCpuCount>
+		<CopyLocalLockFileAssemblies>false</CopyLocalLockFileAssemblies>
 		<FodyVerbose>true</FodyVerbose>
 	</PropertyGroup>
 
 	<ItemGroup>
-	  <PackageReference Include="TrixxInjection.Fody" Version="1.1.29" PrivateAssets="All" />
+		<PackageReference Include="TrixxInjection.Fody" Version="1.3.16" GeneratePathProperty="true">
+			<PrivateAssets>all</PrivateAssets>
+		</PackageReference>
 	</ItemGroup>
+
+	<Target Name="CopyFrameworkDllBeforeCompile" BeforeTargets="CoreCompile">
+		<ItemGroup>
+			<_FrameworkDlls Include="
+				$(PkgTrixxInjection_Fody)\lib\**\TrixxInjection.Framework.dll;
+				$(PkgTrixxInjection_Fody)\lib\**\TrixxInjection.Framework.xml
+			" />
+		</ItemGroup>
+		<Message Text="Copying TrixxInjection.Framework.dll from '@(_FrameworkDlls)' → '$(IntermediateOutputPath)'" Importance="High" />
+		<Copy SourceFiles="@(_FrameworkDlls)" DestinationFolder="$(IntermediateOutputPath)" SkipUnchangedFiles="true" />
+	</Target>
 
 </Project>

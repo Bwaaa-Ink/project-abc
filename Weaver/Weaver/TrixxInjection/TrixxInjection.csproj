@@ -1,26 +1,45 @@
-<?xml version="1.0" encoding="utf-8"?>
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 	<PropertyGroup>
 		<TargetFrameworks>net48;net452;netstandard2.0;netstandard2.1</TargetFrameworks>
 		<SignAssembly>true</SignAssembly>
 		<Authors>Trixxit</Authors>
-		<Copyright>Copyright $([System.DateTime]::UtcNow.ToString(yyyy)).</Copyright>
+		<Version>1.3.16</Version>
 		<Description>Bwaaaa.</Description>
 		<PackageLicenseExpression>MIT</PackageLicenseExpression>
-		<PackageTags>Debugging, RemoveBoilerplate, ILWeaving, Fody, Cecil, AOP</PackageTags>
-		<PackageOutputPath>$(SolutionDir)../nugets</PackageOutputPath>
-		<Version>1.1.30</Version>
+		<PackageTags>Debugging;RemoveBoilerplate;ILWeaving;Fody;Cecil;AOP</PackageTags>
 		<PackageReleaseNotes>
-			[ STABLE ] Full automatic JSON diagnostic serialisation without sizing.
+			- Packaging XML files with reference projects.
 		</PackageReleaseNotes>
+		<PackageOutputPath>$(SolutionDir)..\nugets</PackageOutputPath>
 		<RunPostBuildEvent>OnOutputUpdated</RunPostBuildEvent>
 		<DebugType>portable</DebugType>
+		<TargetsForTfmSpecificBuildOutput>$(TargetsForTfmSpecificBuildOutput);CopyProjectReferencesToPackage</TargetsForTfmSpecificBuildOutput>
 	</PropertyGroup>
+
 	<ItemGroup>
 		<PackageReference Include="Fody" Version="6.6.4" PrivateAssets="none" />
 		<PackageReference Include="FodyPackaging" Version="6.6.4" PrivateAssets="All" />
+		<ProjectReference Include="..\TrixxInjection.Framework\TrixxInjection.Framework.csproj" PrivateAssets="All">
+			<Private>true</Private>
+		</ProjectReference>
 	</ItemGroup>
+
+	<Target Name="CopyProjectReferencesToPackage" DependsOnTargets="BuildOnlySettings;ResolveReferences">
+		<ItemGroup>
+			<_ProjRefDlls Include="@(ReferenceCopyLocalPaths->WithMetadataValue('ReferenceSourceTarget','ProjectReference')->WithMetadataValue('PrivateAssets','All'))" />
+		</ItemGroup>
+		<ItemGroup>
+			<_ProjRefXmls Include="@(_ProjRefDlls->'%(RootDir)%(Directory)%(Filename).xml')" Condition="Exists('%(RootDir)%(Directory)%(Filename).xml')" />
+		</ItemGroup>
+		<Message Text="→ Packing project-refs: @(_ProjRefDlls)" Importance="High" Condition="'@(_ProjRefDlls)' != ''" />
+		<Message Text="→ Packing their docs:   @(_ProjRefXmls)" Importance="High" Condition="'@(_ProjRefXmls)' != ''" />
+		<ItemGroup>
+			<BuildOutputInPackage Include="@(_ProjRefDlls)" TargetPath="%(_ProjRefDlls.DestinationSubDirectory)%(Filename)%(Extension)" />
+			<BuildOutputInPackage Include="@(_ProjRefXmls)" TargetPath="%(_ProjRefXmls.DestinationSubDirectory)%(Filename)%(Extension)" />
+		</ItemGroup>
+	</Target>
+
 	<Target Name="CopyLatestPackage" AfterTargets="Pack">
-	  <Exec Command="call &quot;$(SolutionDir)../nugets/weaverCopy.bat&quot;" />
+		<Exec Command="call &quot;$(SolutionDir)..\nugets\weaverCopy.bat&quot;" />
 	</Target>
 </Project>
