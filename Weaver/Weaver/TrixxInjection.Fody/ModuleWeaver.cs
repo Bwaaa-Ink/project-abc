@@ -33,9 +33,10 @@ namespace TrixxInjection.Fody
 #if DEBUG && ATTACH_DEBUG
             System.Diagnostics.Debugger.Launch();
 #endif
+            #region Configuration
             var (derived, conf) = LoadConfigurator(ModuleDefinition);
             if (derived)
-                ParseConfiguration(conf);
+                Configuration = CreateConfigFromDictionary(conf);
             if (Configuration.GeneralBehaviour.HasFlag(GeneralBehaviours.Breakpointer))
             {
                 if (System.Diagnostics.Debugger.IsAttached)
@@ -46,9 +47,10 @@ namespace TrixxInjection.Fody
 
             var L = new L(Configuration.GeneralBehaviour.HasFlag(GeneralBehaviours.DebugLogging) ? Logging.LogLevel.Debug : Logging.LogLevel.Off);
             L.W("Starting Weaving");
+            #endregion
             #region Setup
             var sb = new StringBuilder();
-
+            
 
             var ignoredItems = new List<string>();
             if (!Configuration.SourceSerialiseSettings.HasFlag(SourceSerialiseBehaviour.DoNotIgnoreItems))
@@ -79,6 +81,7 @@ namespace TrixxInjection.Fody
 
 
             #endregion
+            #region Preweave SSing
             if (Configuration.SourceSerialisedTiming.HasFlag(SourceSerialisingTimingBehaviour.PreWeave))
             {
                 try
@@ -119,18 +122,49 @@ namespace TrixxInjection.Fody
                     sb.Clear();
                 }
             }
+            #endregion
+            #region Weaving
 
-
-
-            try
+            #endregion
+            #region PostWeave SSing
+            if (Configuration.SourceSerialisedTiming.HasFlag(SourceSerialisingTimingBehaviour.PreWeave))
             {
-                File.WriteAllText("C:/Logs/Diagnostic_Test.txt", sb.ToString());
+                try
+                {
+                    sb.AppendLine("START OF POST WEAVE DIAGNOSTICS");
+                    //x sb._($"{nameof(Instruction)}");
+                    WriteInfo("Starting Weaver Diagnostics");
+                    var a = ModuleDefinition.Assembly;
+
+                    sb.AppendLine(
+                        new SourceSerialiser().Serialise(
+                            a, ignoredItems,
+                            new List<string> { nameof(Mono.Cecil.ModuleDefinition.Assembly) },
+                            squishedItems,
+                            aliases
+                        )
+                    );
+                    sb.AppendLine("END OF DIAGNOSTICaS");
+                }
+                catch (InvalidOperationException ex)
+                {
+                    WriteError(
+                        $"An invalid operation occured: {ex.Message}   @   {ex.Source}   stacked with   {ex.StackTrace}");
+                }
+                catch (Exception ex)
+                {
+                    WriteError(
+                        $"A {ex.GetType().Name} occured: {ex.Message}   @   {ex.Source}   stacked with   {ex.StackTrace}");
+                }
+                finally
+                {
+                    WriteInfo("Weaving Complete.");
+                    TryAppendFileString(sb.ToString());
+                    sb.Clear();
+                }
             }
-            catch (Exception ex)
-            {
-                WriteError(
-                    $"A {ex.GetType().Name} occured: {ex.Message}   @   {ex.Source}   stacked with   {ex.StackTrace}");
-            }
+            #endregion
+
         }
 
         public override IEnumerable<string> GetAssembliesForScanning()
@@ -188,13 +222,22 @@ namespace TrixxInjection.Fody
             return (true, dict);
         }
 
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="Properties"></param>
-        private void ParseConfiguration(Dictionary<string, object> Properties)
+        public static Configurator CreateConfigFromDictionary(IDictionary<string, object> values)
         {
-
+            var instance = new Configurator();
+            foreach (var kvp in values)
+            {
+                var property = typeof(Configurator).GetProperty(kvp.Key);
+                if (property != null && property.CanWrite)
+                {
+                    var value = kvp.Value;
+                    if (value != null && property.PropertyType.IsAssignableFrom(value.GetType()))
+                        property.SetValue(instance, value);
+                    else if (value != null)
+                        property.SetValue(instance, Convert.ChangeType(value, property.PropertyType));
+                }
+            }
+            return instance;
         }
 
         private string GetNamespace()
