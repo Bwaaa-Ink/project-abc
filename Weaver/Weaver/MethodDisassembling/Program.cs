@@ -29,10 +29,10 @@ namespace MethodDisassembling
             @class = new();
             @class.RunStopWatcher();
             AnEvent += (s) => { Console.WriteLine("Hmmmm"); };
+            Console.Read();
         }
 
-        [MethodLogger]
-        private static void M2()
+        public static void M2()
         {
             try
             {
@@ -72,24 +72,6 @@ namespace MethodDisassembling
         {
             b = a + ba.ToString();
         }
-
-        public class Class
-        {
-            public Class()
-            {
-                _ = "yo";
-                M2();
-            }
-
-            public void RunStopWatcher()
-            {
-                var stopwatcher = new Stopwatch();
-                stopwatcher.Start();
-                stopwatcher.Stop();
-                var ms = stopwatcher.ElapsedMilliseconds;
-                Console.WriteLine($"Stopwatch final time: {ms}");
-            }
-        }
     }
 
     [Flags]
@@ -106,6 +88,40 @@ namespace MethodDisassembling
         Nine,
         [An]
         Ten = 99
+    }
+
+    [TrixxInjection.Attributes.Creation]
+    [TrixxInjection.Attributes.Deletion]
+    public class Class
+    {
+        public Class()
+        {
+            _ = "yo";
+            Program.M2();
+        }
+
+        public void RunStopWatcher()
+        {
+            var stopwatcher = new Stopwatch();
+            stopwatcher.Start();
+            stopwatcher.Stop();
+            var ms = stopwatcher.ElapsedMilliseconds;
+            Console.WriteLine($"Stopwatch final time: {ms}");
+        }
+    }
+
+    [TrixxInjection.Attributes.Creation]
+    [TrixxInjection.Attributes.Deletion]
+    public class Class2
+    {
+        public bool field = false;
+    }
+
+    [TrixxInjection.Attributes.Creation]
+    [TrixxInjection.Attributes.Deletion]
+    public class Class3 : Class2
+    {
+        public new bool field = true;
     }
 
     public class AnAttribute : Attribute;

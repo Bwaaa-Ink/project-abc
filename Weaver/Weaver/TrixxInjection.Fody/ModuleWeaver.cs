@@ -12,6 +12,7 @@ using System.Reflection;
 using System.Text;
 using Mono.Cecil.Cil;
 using TrixxInjection.Config;
+using TrixxInjection.FileHandling;
 using MethodAttributes = Mono.Cecil.MethodAttributes;
 using static TrixxInjection.Config.Enums;
 
@@ -21,10 +22,15 @@ namespace TrixxInjection.Fody
     public class ModuleWeaver : BaseModuleWeaver
     {
         public override bool ShouldCleanReference => true;
-        public Config.Configurator Configuration = new Configurator();
+        public Configurator Configuration = new Configurator();
+        internal static ModuleWeaver That;
+        internal L L;
+        internal SerialiseConfig SSC;
+        internal AssemblyTypeMethodTree TrixxInjection_Framework_ExpressionTree;
 
         public ModuleWeaver()
         {
+            That = this;
             SourceSerialiser.Weaver = this;
         }
 
@@ -34,6 +40,9 @@ namespace TrixxInjection.Fody
             System.Diagnostics.Debugger.Launch();
 #endif
             #region Configuration
+
+            CopyFrameworkFiles();
+            ResolveTIF();
             var (derived, conf) = LoadConfigurator(ModuleDefinition);
             if (derived)
                 Configuration = CreateConfigFromDictionary(conf);
@@ -45,7 +54,7 @@ namespace TrixxInjection.Fody
                     System.Diagnostics.Debugger.Break();
             }
 
-            var L = new L(Configuration.GeneralBehaviour.HasFlag(GeneralBehaviours.DebugLogging) ? Logging.LogLevel.Debug : Logging.LogLevel.Off);
+            L = new L(Configuration.GeneralBehaviour.HasFlag(GeneralBehaviours.DebugLogging) ? Logging.LogLevel.Debug : Logging.LogLevel.Off);
             L.W("Starting Weaving");
             #endregion
             #region Setup
@@ -79,24 +88,36 @@ namespace TrixxInjection.Fody
                     Configurator.DefaultRecommendedAliases.Select(kvp => (kvp.Key, kvp.Value)).ToList().ForEach(kvp => aliases.Add(kvp.Key, kvp.Value));
             }
 
-
+            SSC = new SerialiseConfig()
+            {
+                Aliases = aliases,
+                Events = (Configuration.SourceSerialiseSettings & SourceSerialiseBehaviour.SerialiseEvents) != 0,
+                PFields =
+                    (Configuration.SourceSerialiseSettings & SourceSerialiseBehaviour.SerialisePrivateFields) != 0,
+                Fields = (Configuration.SourceSerialiseSettings & SourceSerialiseBehaviour.SerialiseFields) != 0,
+                Properties =
+                    (Configuration.SourceSerialiseSettings & SourceSerialiseBehaviour.SerialiseProperties) != 0,
+                PrettyPrint = (Configuration.SourceSerialiseSettings & SourceSerialiseBehaviour.PrettyPrint) != 0,
+                TypeCounting =
+                    (Configuration.SourceSerialiseSettings & SourceSerialiseBehaviour.IncludeTypeCounts) != 0,
+                IgnoredObjects = ignoredItems,
+                SimplexObjects = new List<string> { nameof(Mono.Cecil.ModuleDefinition.Assembly) },
+                SquashedObjects = squishedItems
+            };
             #endregion
             #region Preweave SSing
             if (Configuration.SourceSerialisedTiming.HasFlag(SourceSerialisingTimingBehaviour.PreWeave))
             {
                 try
                 {
-                    sb.AppendLine("START OF DIAGNOSTICS");
+                    sb.AppendLine("START OF PRE WEAVE DIAGNOSTICS");
                     //x sb._($"{nameof(Instruction)}");
                     WriteInfo("Starting Weaver Diagnostics");
                     var a = ModuleDefinition.Assembly;
 
                     sb.AppendLine(
                         new SourceSerialiser().Serialise(
-                            a, ignoredItems,
-                            new List<string> { nameof(Mono.Cecil.ModuleDefinition.Assembly) },
-                            squishedItems,
-                            aliases
+                            a, SSC
                         )
                     );
                     sb.AppendLine("END OF DIAGNOSTICS");
@@ -117,14 +138,14 @@ namespace TrixxInjection.Fody
                 }
                 finally
                 {
-                    WriteInfo("Weaving Complete.");
+                    WriteInfo("PreWeave Serialisation Complete.");
                     TryAppendFileString(sb.ToString());
                     sb.Clear();
                 }
             }
             #endregion
             #region Weaving
-
+            Weaving.Weave();
             #endregion
             #region PostWeave SSing
             if (Configuration.SourceSerialisedTiming.HasFlag(SourceSerialisingTimingBehaviour.PreWeave))
@@ -138,13 +159,10 @@ namespace TrixxInjection.Fody
 
                     sb.AppendLine(
                         new SourceSerialiser().Serialise(
-                            a, ignoredItems,
-                            new List<string> { nameof(Mono.Cecil.ModuleDefinition.Assembly) },
-                            squishedItems,
-                            aliases
+                            a, SSC
                         )
                     );
-                    sb.AppendLine("END OF DIAGNOSTICaS");
+                    sb.AppendLine("END OF DIAGNOSTICS");
                 }
                 catch (InvalidOperationException ex)
                 {
@@ -167,22 +185,72 @@ namespace TrixxInjection.Fody
 
         }
 
+        private void ResolveTIF()
+        {
+            using (var ms = new MemoryStream(File.ReadAllBytes(ModuleDefinition.AssemblyResolver.Resolve(ModuleDefinition.AssemblyReferences.First(asm => asm.Name == "TrixxInjection.Framework")).MainModule.FileName)))
+            {
+                var asseMemory = AssemblyDefinition.ReadAssembly(ms,
+                    new ReaderParameters { AssemblyResolver = ModuleDefinition.AssemblyResolver, InMemory = true });
+                TrixxInjection_Framework_ExpressionTree = new AssemblyTypeMethodTree(asseMemory);
+            }
+        }
+
+        private void CopyFrameworkFiles()
+        {
+            var pkgRoot = Environment.GetEnvironmentVariable("PkgTrixxInjection_Fody");
+            if (string.IsNullOrEmpty(pkgRoot))
+                throw new WeavingException("Could not find PkgTrixxInjection_Fody environment variable.");
+
+            var frameworkDll = Directory
+                .EnumerateFiles(Path.Combine(pkgRoot, "lib"), "TrixxInjection.Framework.dll", SearchOption.AllDirectories)
+                .FirstOrDefault();
+            if (frameworkDll == null)
+                throw new WeavingException("TrixxInjection.Framework.dll not found under lib\\**");
+
+            var frameworkXml = Path.ChangeExtension(frameworkDll, ".xml");
+
+            var intermediateDir = Path.GetDirectoryName(ModuleDefinition.FileName);
+            Directory.CreateDirectory(intermediateDir);
+            File.Copy(frameworkDll,
+                      Path.Combine(intermediateDir, "TrixxInjection.Framework.dll"),
+                      overwrite: true);
+            File.Copy(frameworkXml,
+                      Path.Combine(intermediateDir, "TrixxInjection.Framework.xml"),
+                      overwrite: true);
+
+            var outputDir = Environment.GetEnvironmentVariable("OutDir")
+                         ?? Environment.GetEnvironmentVariable("TargetDir");
+
+            if (string.IsNullOrEmpty(outputDir)) return;
+
+            Directory.CreateDirectory(outputDir);
+            File.Copy(frameworkDll,
+                Path.Combine(outputDir, "TrixxInjection.Framework.dll"),
+                overwrite: true);
+            File.Copy(frameworkXml,
+                Path.Combine(outputDir, "TrixxInjection.Framework.xml"),
+                overwrite: true);
+        }
+
         public override IEnumerable<string> GetAssembliesForScanning()
         {
             yield return "netstandard";
             yield return "mscorlib";
         }
 
-        private void TryAppendFileString(string content)
+        internal void TryAppendFileString(string content)
         {
-            try
+            using (var writer = FileH.WriterFor(Configuration.LogFileName))
             {
-                File.AppendAllText("C:/Logs/Diagnostic_Test.txt", content);
-            }
-            catch (Exception ex)
-            {
-                WriteError(
-                    $"A {ex.GetType().Name} occured: {ex.Message}   @   {ex.Source}   stacked with   {ex.StackTrace}");
+                try
+                {
+                    writer.WriteNoTime(content);
+                }
+                catch (Exception ex)
+                {
+                    WriteError(
+                        $"A {ex.GetType().Name} occured: {ex.Message}   @   {ex.Source}   stacked with   {ex.StackTrace}");
+                }
             }
         }
 
@@ -200,7 +268,7 @@ namespace TrixxInjection.Fody
                 var message = "THISISASYMBOL - Derived Classes base Types in executing module\n" + string.Join(",\n",
                     md.Types.Where(t => t.BaseType != null)
                         .Select(t => $"{t.Name}: {t.BaseType.FullName} ({t.BaseType.Name})"));
-                SourceSerialiser.Weaver.WriteInfo(message);
+                That.WriteInfo(message);
 #endif
                 return (false, null);
             }
@@ -298,9 +366,6 @@ namespace TrixxInjection.Fody
         {
             var name = new AssemblyName(args.Name).Name + ".dll";
             var candidate = Path.Combine(_consumingDirectory, name);
-#if DEBUG
-            
-#endif
             return File.Exists(candidate)
                 ? Assembly.LoadFrom(candidate)
                 : null;

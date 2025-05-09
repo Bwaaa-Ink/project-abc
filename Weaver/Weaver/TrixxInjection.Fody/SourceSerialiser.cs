@@ -45,6 +45,7 @@ namespace TrixxInjection.Fody
         internal bool HandlePrivateFields { get; set; } = false;
         internal bool HandleEvents { get; set; } = false;
         internal int MaxRecursionDepth { get; set; } = 300;
+        internal bool CountTypes { get; set; } = false;
 
         private class TypeMeta
         {
@@ -79,25 +80,23 @@ namespace TrixxInjection.Fody
 
         private readonly List<string> VisitedStatics = new List<string>();
 
-        public string Serialise(object obj, List<string> ignoredObjects = null, List<string> simplifiedComplexObjects = null, List<string> squashedObjects = null, Dictionary<string, string> aliases = null)
+        public string Serialise(object obj, SerialiseConfig config)
         {
             var stopwatch = Stopwatch.StartNew();
+            (IgnoredObjects, SquashedObjects, Aliases, PrettyPrint, HandleProperties, HandleFields, HandlePrivateFields,
+                    HandleEvents, CountTypes)
+                = (config.IgnoredObjects, config.SquashedObjects, config.Aliases.Select(kvp => (kvp.Key, kvp.Value)).ToList(), config.PrettyPrint, config.Properties,
+                    config.Fields, config.PFields, config.Events, config.TypeCounting);
             string ind = PrettyPrint ? "    " : " ";
             string ind2 = ind + ind;
             var visited = new HashSet<object>(new ReferenceEqualityComparer());
             var sb = new StringBuilder();
-            if (ignoredObjects != null)
-                IgnoredObjects = ignoredObjects;
-            if (squashedObjects != null)
-                SquashedObjects = squashedObjects;
-            if (aliases != null)
-                Aliases = aliases.Select(kvp => (kvp.Key, kvp.Value)).ToList();
             AAppend(sb, "{");
             AAppend(sb, NewLine);
             AAppend(sb, ind);
             AAppend(sb, "\"data\"");
             AAppend(sb, Colon);
-            SerializeValue(obj, simplifiedComplexObjects, visited, sb, 1, 0);
+            SerializeValue(obj, config.SimplexObjects, visited, sb, 1, 0);
 
             AAppend(sb, $"{NewLine}{ind}\"metadata\"{Colon}{{");
             AAppend(sb, $"{NewLine}{ind2}\"squashMappings\"{Colon}{{");
@@ -109,7 +108,7 @@ namespace TrixxInjection.Fody
             AAppend(sb, $"{NewLine}{ind2}}}{Comma}");
             AAppend(sb, $"{NewLine}{ind2}\"aliases\"{Colon}[{string.Join(Comma, Aliases.Select(a => $"{NewLine}{ind2}{ind}\"-{a.Item2}\"{Colon}\"{a.Item1}\""))}{NewLine}{ind2}]{Comma}", false);
 #if TYPE_COUNTING
-            AAppend(sb, 
+            AAppend(sb,
                 $"{NewLine}{ind2}Type Counts{Colon}{{{string.Join(Comma, TypeCounts.Select(kvp => $"{NewLine}{ind2}{ind}{(kvp.Key.Item1 ?? "NFN") + $"({kvp.Key.Item1})"}: {kvp.Value}"))}{NewLine}{ind2}}}{Comma}");
 #endif
             stopwatch.Stop();
@@ -670,5 +669,19 @@ namespace TrixxInjection.Fody
     {
         public new bool Equals(object x, object y) => ReferenceEquals(x, y);
         public int GetHashCode(object obj) => RuntimeHelpers.GetHashCode(obj);
+    }
+
+    internal sealed class SerialiseConfig
+    {
+        internal List<string> IgnoredObjects;
+        internal Dictionary<string, string> Aliases;
+        internal List<string> SquashedObjects;
+        internal List<string> SimplexObjects;
+        internal bool PrettyPrint = false;
+        internal bool TypeCounting = false;
+        internal bool Fields = true;
+        internal bool PFields = false;
+        internal bool Events = false;
+        internal bool Properties = true;
     }
 }

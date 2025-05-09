@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -22,19 +23,23 @@ namespace TrixxInjection.Config
             /// <summary>
             /// Default Value, no general behaviours specified
             /// </summary>
-            None = 0x0,
+            None = 0b0,
             /// <summary>
             /// Flags the execution mode for printing debug messages to MSBuild
             /// </summary>
-            DebugLogging = 0x1,
+            DebugLogging = 0b1,
             /// <summary>
             /// Enables the breakpointing during execution
             /// </summary>
-            Breakpointer = 0x2,
+            Breakpointer = 0b10,
+            /// <summary>
+            /// Logging is also recorded in the Log file, and not just printed.
+            /// </summary>
+            RecordLogs = 0b100,
             /// <summary>
             /// Toggles all above debugging flags
             /// </summary>
-            Debugging = 0x3,
+            Debugging = 0b111,
         }
 
         /// <summary>

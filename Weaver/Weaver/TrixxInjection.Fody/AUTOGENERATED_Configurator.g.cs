@@ -16,9 +16,7 @@ namespace TrixxInjection.Config
         public virtual string LogFileName { get; } = Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),
             "Weaving",
-            "LOG_",
-            DateTimeOffset.Now.Unix().ToString(),
-            ".log"
+            "LOG_" + DateTimeOffset.Now.Unix() + ".log"
         );
 
         #region Squishing

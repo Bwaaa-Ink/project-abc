@@ -6,6 +6,6 @@
   </PropertyGroup>
 
   <Target Name="PreBuild" BeforeTargets="PreBuildEvent">
-    <Exec Command="call &quot;$(SolutionDir)CopyEnums.bat&quot;" />
+    <Exec Command="call &quot;$(SolutionDir)SyncFiles.bat&quot;" />
   </Target>
 </Project>
