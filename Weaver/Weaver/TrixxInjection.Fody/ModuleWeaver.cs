@@ -1,4 +1,4 @@
-﻿//#define ATTACH_DEBUG
+﻿#define ATTACH_DEBUG
 #define DEBUG
 
 using System;
@@ -187,50 +187,54 @@ namespace TrixxInjection.Fody
 
         private void ResolveTIF()
         {
-            using (var ms = new MemoryStream(File.ReadAllBytes(ModuleDefinition.AssemblyResolver.Resolve(ModuleDefinition.AssemblyReferences.First(asm => asm.Name == "TrixxInjection.Framework")).MainModule.FileName)))
-            {
-                var asseMemory = AssemblyDefinition.ReadAssembly(ms,
-                    new ReaderParameters { AssemblyResolver = ModuleDefinition.AssemblyResolver, InMemory = true });
-                TrixxInjection_Framework_ExpressionTree = new AssemblyTypeMethodTree(asseMemory);
-            }
+            TrixxInjection_Framework_ExpressionTree = new AssemblyTypeMethodTree(ModuleDefinition.AssemblyResolver.Resolve(
+                ModuleWeaver.That.ModuleDefinition.AssemblyReferences.First(asm =>
+                    asm.Name == "TrixxInjection.Framework")));
         }
 
         private void CopyFrameworkFiles()
         {
-            var pkgRoot = Environment.GetEnvironmentVariable("PkgTrixxInjection_Fody");
-            if (string.IsNullOrEmpty(pkgRoot))
-                throw new WeavingException("Could not find PkgTrixxInjection_Fody environment variable.");
+            var frameworkRef = ModuleDefinition
+                .AssemblyReferences
+                .FirstOrDefault(r => r.Name == "TrixxInjection.Framework");
+            if (frameworkRef == null)
+                throw new InvalidOperationException("No reference to TrixxInjection.Framework found.");
 
-            var frameworkDll = Directory
-                .EnumerateFiles(Path.Combine(pkgRoot, "lib"), "TrixxInjection.Framework.dll", SearchOption.AllDirectories)
-                .FirstOrDefault();
-            if (frameworkDll == null)
-                throw new WeavingException("TrixxInjection.Framework.dll not found under lib\\**");
-
-            var frameworkXml = Path.ChangeExtension(frameworkDll, ".xml");
+            var resolvedAsm = ModuleDefinition
+                .AssemblyResolver
+                .Resolve(frameworkRef);
+            var sourceDll = resolvedAsm.MainModule.FileName;
+            var sourceXml = Path.ChangeExtension(sourceDll, ".xml");
 
             var intermediateDir = Path.GetDirectoryName(ModuleDefinition.FileName);
             Directory.CreateDirectory(intermediateDir);
-            File.Copy(frameworkDll,
-                      Path.Combine(intermediateDir, "TrixxInjection.Framework.dll"),
-                      overwrite: true);
-            File.Copy(frameworkXml,
-                      Path.Combine(intermediateDir, "TrixxInjection.Framework.xml"),
-                      overwrite: true);
+
+            var destDllIntermediate = Path.Combine(intermediateDir, Path.GetFileName(sourceDll));
+            File.Copy(sourceDll, destDllIntermediate, overwrite: true);
+
+            if (File.Exists(sourceXml))
+            {
+                var destXmlIntermediate = Path.Combine(intermediateDir, Path.GetFileName(sourceXml));
+                File.Copy(sourceXml, destXmlIntermediate, overwrite: true);
+            }
 
             var outputDir = Environment.GetEnvironmentVariable("OutDir")
-                         ?? Environment.GetEnvironmentVariable("TargetDir");
+                            ?? Environment.GetEnvironmentVariable("TargetDir");
+            if (!string.IsNullOrWhiteSpace(outputDir))
+            {
+                Directory.CreateDirectory(outputDir);
 
-            if (string.IsNullOrEmpty(outputDir)) return;
+                var destDllOutput = Path.Combine(outputDir, Path.GetFileName(sourceDll));
+                File.Copy(sourceDll, destDllOutput, overwrite: true);
 
-            Directory.CreateDirectory(outputDir);
-            File.Copy(frameworkDll,
-                Path.Combine(outputDir, "TrixxInjection.Framework.dll"),
-                overwrite: true);
-            File.Copy(frameworkXml,
-                Path.Combine(outputDir, "TrixxInjection.Framework.xml"),
-                overwrite: true);
+                if (File.Exists(sourceXml))
+                {
+                    var destXmlOutput = Path.Combine(outputDir, Path.GetFileName(sourceXml));
+                    File.Copy(sourceXml, destXmlOutput, overwrite: true);
+                }
+            }
         }
+
 
         public override IEnumerable<string> GetAssembliesForScanning()
         {
@@ -277,14 +281,22 @@ namespace TrixxInjection.Fody
             using (var cah = CustomAssemblyHandling.Enable(path))
             {
                 var assembly = Assembly.LoadFrom(path);
+                var cr = (derived.BaseType.Namespace, derived.BaseType.Name, derived.BaseType.Module, derived.BaseType.Scope);
+                derived.BaseType = null; // Remove the base type, which is the dependancy the assembly couldnt resolve
                 var resolvedType = assembly.GetType(derived.FullName, true);
                 var instance = Activator.CreateInstance(resolvedType ?? throw new WeavingException(
                     "Failed to resolve config type"
                 ));
-                dict = resolvedType
+                var baseConfig = Activator.CreateInstance<Configurator>();
+                derived.BaseType = new TypeReference(cr.Namespace, cr.Name, cr.Module, cr.Scope); // Readd the base type AFTER creating the instance so it still compiles correctly
+                dict = typeof(Configurator)
                     .GetProperties(BindingFlags.Public | BindingFlags.Instance)
                     .Where(p => p.GetMethod.IsVirtual && !p.GetMethod.IsStatic)
-                    .ToDictionary(p => p.Name, p => p.GetValue(instance));
+                    .ToDictionary(p => p.Name, p => p.GetValue(baseConfig));
+                resolvedType.GetProperties(BindingFlags.Public | BindingFlags.Instance)
+                    .Where(p => p.GetMethod.IsVirtual && !p.GetMethod.IsStatic).ToList().ForEach(p =>
+                        dict[p.Name] = p.GetValue(instance) // override defaults with those in the child class.
+                );
             }
 
             return (true, dict);

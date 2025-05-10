@@ -14,9 +14,6 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TrixxInjection", "TrixxInje
 	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MethodDisassembling", "MethodDisassembling\MethodDisassembling.csproj", "{57E5A161-F426-447D-AB68-43AF39648201}"
-	ProjectSection(ProjectDependencies) = postProject
-		{31075232-C68F-44D6-AF2D-8F60529EFD8B} = {31075232-C68F-44D6-AF2D-8F60529EFD8B}
-	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TrixxInjection.Framework", "TrixxInjection.Framework\TrixxInjection.Framework.csproj", "{D65CCBB6-8949-4081-AE5B-09FD4B07AC4E}"
 EndProject
