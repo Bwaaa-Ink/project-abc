@@ -4,6 +4,9 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 VisualStudioVersion = 17.12.35707.178
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TrixxInjection.Fody", "TrixxInjection.Fody\TrixxInjection.Fody.csproj", "{6D7B9760-1FC3-49EE-B6CB-54D08A29A547}"
+	ProjectSection(ProjectDependencies) = postProject
+		{D65CCBB6-8949-4081-AE5B-09FD4B07AC4E} = {D65CCBB6-8949-4081-AE5B-09FD4B07AC4E}
+	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TrixxInjection", "TrixxInjection\TrixxInjection.csproj", "{31075232-C68F-44D6-AF2D-8F60529EFD8B}"
 	ProjectSection(ProjectDependencies) = postProject
@@ -11,9 +14,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TrixxInjection", "TrixxInje
 	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MethodDisassembling", "MethodDisassembling\MethodDisassembling.csproj", "{57E5A161-F426-447D-AB68-43AF39648201}"
-	ProjectSection(ProjectDependencies) = postProject
-		{31075232-C68F-44D6-AF2D-8F60529EFD8B} = {31075232-C68F-44D6-AF2D-8F60529EFD8B}
-	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TrixxInjection.Framework", "TrixxInjection.Framework\TrixxInjection.Framework.csproj", "{D65CCBB6-8949-4081-AE5B-09FD4B07AC4E}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -33,8 +35,15 @@ Global
 		{57E5A161-F426-447D-AB68-43AF39648201}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{57E5A161-F426-447D-AB68-43AF39648201}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{57E5A161-F426-447D-AB68-43AF39648201}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D65CCBB6-8949-4081-AE5B-09FD4B07AC4E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D65CCBB6-8949-4081-AE5B-09FD4B07AC4E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D65CCBB6-8949-4081-AE5B-09FD4B07AC4E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D65CCBB6-8949-4081-AE5B-09FD4B07AC4E}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {D24DF66D-784E-41BB-A18E-68025F19F829}
 	EndGlobalSection
 EndGlobal

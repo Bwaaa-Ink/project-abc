@@ -1,26 +1,58 @@
-<?xml version="1.0" encoding="utf-8"?>
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 	<PropertyGroup>
 		<TargetFrameworks>net48;net452;netstandard2.0;netstandard2.1</TargetFrameworks>
 		<SignAssembly>true</SignAssembly>
 		<Authors>Trixxit</Authors>
-		<Copyright>Copyright $([System.DateTime]::UtcNow.ToString(yyyy)).</Copyright>
+		<Version>2.0.9</Version>
 		<Description>Bwaaaa.</Description>
+		<NodeReuse>false</NodeReuse>
 		<PackageLicenseExpression>MIT</PackageLicenseExpression>
-		<PackageTags>Debugging, RemoveBoilerplate, ILWeaving, Fody, Cecil, AOP</PackageTags>
-		<PackageOutputPath>$(SolutionDir)../nugets</PackageOutputPath>
-		<Version>1.1.30</Version>
+		<PackageTags>Debugging;RemoveBoilerplate;ILWeaving;Fody;Cecil;AOP</PackageTags>
 		<PackageReleaseNotes>
-			[ STABLE ] Full automatic JSON diagnostic serialisation without sizing.
+			- ATTRIBUTE MAJOR!
+			- Configuration is setup, or at least mostly.
+			- All non-packing logic has been moved out of TrixxInjection and into TrixxInjection.Framework.
+			- This is a DEBUG build to test if the Creation and Deletion attributes, as well as the Module type injection and StaticFileHandling works.
+			- v2.0.1: (Immediete breakpointer is on).
+			- v2.0.2: Fixed Assembly resolving, disabled immediete breakpoint.
+			- 2.0.3: Fixed Assembly Expression tree mapping when methods had the same name.
+			- ..4: Fixed incorrect default log path.
+			- ..5: FrameworkMemory is now loaded in memory.
+			- ..6: Undid ..5 change, moved framework copy logic from csproj to inside weaver execution.
+			- ..7: Attempting to improve Framework stuff
+			- ..8 Weave should now self support it's framework dll, and properly load it.
+			- ..9 'Cannot find netstandard.dll' issue - immediete breakpointing enabled
 		</PackageReleaseNotes>
+		<PackageOutputPath>$(SolutionDir)..\nugets</PackageOutputPath>
 		<RunPostBuildEvent>OnOutputUpdated</RunPostBuildEvent>
 		<DebugType>portable</DebugType>
+		<TargetsForTfmSpecificBuildOutput>$(TargetsForTfmSpecificBuildOutput);CopyProjectReferencesToPackage</TargetsForTfmSpecificBuildOutput>
 	</PropertyGroup>
+
 	<ItemGroup>
 		<PackageReference Include="Fody" Version="6.6.4" PrivateAssets="none" />
 		<PackageReference Include="FodyPackaging" Version="6.6.4" PrivateAssets="All" />
+		<ProjectReference Include="..\TrixxInjection.Framework\TrixxInjection.Framework.csproj" PrivateAssets="All">
+			<Private>true</Private>
+		</ProjectReference>
 	</ItemGroup>
+
+	<Target Name="CopyProjectReferencesToPackage" DependsOnTargets="BuildOnlySettings;ResolveReferences">
+		<ItemGroup>
+			<_ProjRefDlls Include="@(ReferenceCopyLocalPaths->WithMetadataValue('ReferenceSourceTarget','ProjectReference')->WithMetadataValue('PrivateAssets','All'))" />
+		</ItemGroup>
+		<ItemGroup>
+			<_ProjRefXmls Include="@(_ProjRefDlls->'%(RootDir)%(Directory)%(Filename).xml')" Condition="Exists('%(RootDir)%(Directory)%(Filename).xml')" />
+		</ItemGroup>
+		<Message Text="→ Packing project-refs: @(_ProjRefDlls)" Importance="High" Condition="'@(_ProjRefDlls)' != ''" />
+		<Message Text="→ Packing their docs:   @(_ProjRefXmls)" Importance="High" Condition="'@(_ProjRefXmls)' != ''" />
+		<ItemGroup>
+			<BuildOutputInPackage Include="@(_ProjRefDlls)" TargetPath="%(_ProjRefDlls.DestinationSubDirectory)%(Filename)%(Extension)" />
+			<BuildOutputInPackage Include="@(_ProjRefXmls)" TargetPath="%(_ProjRefXmls.DestinationSubDirectory)%(Filename)%(Extension)" />
+		</ItemGroup>
+	</Target>
+
 	<Target Name="CopyLatestPackage" AfterTargets="Pack">
-	  <Exec Command="call &quot;$(SolutionDir)../nugets/weaverCopy.bat&quot;" />
+		<Exec Command="call &quot;$(SolutionDir)..\nugets\weaverCopy.bat&quot;" />
 	</Target>
 </Project>
