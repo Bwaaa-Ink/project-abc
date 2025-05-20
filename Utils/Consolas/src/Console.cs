@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
-using System.Linq;
-using System.Text;
+﻿using System.Text;
 using Terminal.Gui;
 
 namespace Utilities.Console
@@ -23,11 +19,11 @@ namespace Utilities.Console
 			_options = options;
 			_bufferLimit = options.BufferSize;
 			Application.Init();
-            _top = new Window() { CanFocus = true, BorderStyle = LineStyle.Rounded, ShadowStyle = ShadowStyle.Transparent, Title = DefaultCommands.DefaultPath, ColorScheme = new ColorScheme { Normal = options.ColorScheme } };
+			_top = new Window() { CanFocus = true, BorderStyle = LineStyle.Rounded, ShadowStyle = ShadowStyle.Transparent, Title = DefaultCommands.DefaultPath, ColorScheme = new ColorScheme { Normal = options.ColorScheme } };
 			SetupViews();
 			DefaultCommands.AddDefaults(this);
-            Application.Begin(_top);
-        }
+			Application.Begin(_top);
+		}
 
 		protected abstract void SetupViews();
 

@@ -10,6 +10,7 @@
     <Authors>Trixxit</Authors>
     <Product>Terminal Embeddable System for Support and Analysis</Product>
     <Description>A crossplatform .NET terminal package supporting extensive logging and fully customisable commands in-project.</Description>
+    <PackageOutputPath>..\nugets</PackageOutputPath>
   </PropertyGroup>
 
   <ItemGroup>
