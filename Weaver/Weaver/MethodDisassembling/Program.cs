@@ -3,7 +3,6 @@ using System.ComponentModel.Design;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
-using TrixxInjection;
 
 #pragma warning disable
 
@@ -90,8 +89,6 @@ namespace MethodDisassembling
         Ten = 99
     }
 
-    [TrixxInjection.Attributes.Creation]
-    [TrixxInjection.Attributes.Deletion]
     public class Class
     {
         public Class()
@@ -110,15 +107,13 @@ namespace MethodDisassembling
         }
     }
 
-    [TrixxInjection.Attributes.Creation]
-    [TrixxInjection.Attributes.Deletion]
+
     public class Class2
     {
         public bool field = false;
     }
 
-    [TrixxInjection.Attributes.Creation]
-    [TrixxInjection.Attributes.Deletion]
+
     public class Class3 : Class2
     {
         public new bool field = true;

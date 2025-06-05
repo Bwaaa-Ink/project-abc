@@ -11,9 +11,6 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-		<PackageReference Include="TrixxInjection.Fody" Version="2.0.10" GeneratePathProperty="true">
-			<PrivateAssets>all</PrivateAssets>
-		</PackageReference>
+	  <PackageReference Include="TrixxInjection.Fody" Version="2.0.26" />
 	</ItemGroup>
-
 </Project>

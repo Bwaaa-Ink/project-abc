@@ -10,7 +10,7 @@ namespace TrixxInjection.Fody
     internal class AssemblyTypeMethodTree
     {
         public const string TI = "TrixxInjection";
-        public static string FileHandling => TI + "TrixxInjection.FileHandling";
+        public static string FileHandling => TI + ".FileHandling";
         private readonly Dictionary<string, (TypeDefinition, Dictionary<string, List<MethodDefinition>>)> _tree;
 
         public AssemblyTypeMethodTree(AssemblyDefinition asm)

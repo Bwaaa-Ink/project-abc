@@ -1,19 +1,15 @@
-﻿#define ATTACH_DEBUG
+﻿//#define ATTACH_DEBUG
 #define DEBUG
-
 using System;
 using Fody;
-using Mono.Cecil.Rocks;
 using Mono.Cecil;
 using System.Collections.Generic;
 using System.Linq;
 using System.IO;
 using System.Reflection;
 using System.Text;
-using Mono.Cecil.Cil;
-using TrixxInjection.Config;
 using TrixxInjection.FileHandling;
-using MethodAttributes = Mono.Cecil.MethodAttributes;
+using TrixxInjection.Framework.Attributes;
 using static TrixxInjection.Config.Enums;
 
 namespace TrixxInjection.Fody
@@ -22,7 +18,7 @@ namespace TrixxInjection.Fody
     public class ModuleWeaver : BaseModuleWeaver
     {
         public override bool ShouldCleanReference => true;
-        public Configurator Configuration = new Configurator();
+        public ConfiguratorAttribute Configuration = new ConfiguratorAttribute();
         internal static ModuleWeaver That;
         internal L L;
         internal SerialiseConfig SSC;
@@ -43,15 +39,12 @@ namespace TrixxInjection.Fody
 
             CopyFrameworkFiles();
             ResolveTIF();
-            var (derived, conf) = LoadConfigurator(ModuleDefinition);
+            var derived = LoadConfiguratorAttribute(ModuleDefinition, out var conf);
             if (derived)
                 Configuration = CreateConfigFromDictionary(conf);
             if (Configuration.GeneralBehaviour.HasFlag(GeneralBehaviours.Breakpointer))
             {
-                if (System.Diagnostics.Debugger.IsAttached)
                     System.Diagnostics.Debugger.Launch();
-                else
-                    System.Diagnostics.Debugger.Break();
             }
 
             L = new L(Configuration.GeneralBehaviour.HasFlag(GeneralBehaviours.DebugLogging) ? Logging.LogLevel.Debug : Logging.LogLevel.Off);
@@ -64,28 +57,29 @@ namespace TrixxInjection.Fody
             var ignoredItems = new List<string>();
             if (!Configuration.SourceSerialiseSettings.HasFlag(SourceSerialiseBehaviour.DoNotIgnoreItems))
             {
-                ignoredItems = Configuration.ItemsToIgnore;
+                ignoredItems = Configuration.ItemsToIgnore.ToList();
                 if (!Configuration.SourceSerialiseSettings.HasFlag(SourceSerialiseBehaviour
                         .DoNotAlsoUseRecommendedDefaultIgnoredItems))
-                    ignoredItems = ignoredItems.Concat(Configurator.DefaultRecommendedItemsToIgnore).ToList();
+                    ignoredItems = ignoredItems.Concat(ConfiguratorAttribute.DefaultRecommendedItemsToIgnore).ToList();
             }
 
             var squishedItems = new List<string>();
             if (!Configuration.SourceSerialiseSettings.HasFlag(SourceSerialiseBehaviour.DoNotUseSquishedObjects))
             {
-                squishedItems = Configuration.ObjectsToSquish;
+                squishedItems = Configuration.ObjectsToSquish.ToList();
                 if (!Configuration.SourceSerialiseSettings.HasFlag(SourceSerialiseBehaviour
                         .DoNotAlsoUseRecommendedDefaultSquishedObjects))
-                    squishedItems = squishedItems.Concat(Configurator.DefaultRecommendedObjectsToSquish).ToList();
+                    squishedItems = squishedItems.Concat(ConfiguratorAttribute.DefaultRecommendedObjectsToSquish).ToList();
             }
 
             var aliases = new Dictionary<string, string>();
             if (!Configuration.SourceSerialiseSettings.HasFlag(SourceSerialiseBehaviour.DoNotUseAliases))
             {
-                aliases = Configuration.Aliases;
+                aliases = Configuration.AliasKeys.Zip(Configuration.AliasValues, (k, v) => new { k, v })
+                    .ToDictionary(x => x.k, x => x.v);
                 if (!Configuration.SourceSerialiseSettings.HasFlag(SourceSerialiseBehaviour
                         .DoNotAlsoUseRecommendedDefaultAliases))
-                    Configurator.DefaultRecommendedAliases.Select(kvp => (kvp.Key, kvp.Value)).ToList().ForEach(kvp => aliases.Add(kvp.Key, kvp.Value));
+                    ConfiguratorAttribute.DefaultRecommendedAliases.Select(kvp => (kvp.Key, kvp.Value)).ToList().ForEach(kvp => aliases.Add(kvp.Key, kvp.Value));
             }
 
             SSC = new SerialiseConfig()
@@ -258,56 +252,65 @@ namespace TrixxInjection.Fody
             }
         }
 
-        public static (bool, Dictionary<string, object>) LoadConfigurator(ModuleDefinition md)
+        public static bool LoadConfiguratorAttribute(ModuleDefinition md, out Dictionary<string, object> conf)
         {
-            var path = md.FileName;
-
-            if (string.IsNullOrEmpty(path) || !File.Exists(path))
-                return (false, null);
-            var derived = md.Types.FirstOrDefault(t => t?.BaseType != null && t.BaseType.FullName == "TrixxInjection.Config.Configurator" && !t.IsAbstract);
-
-            if (derived == null)
+            conf = new Dictionary<string, object>();
+            var ca = md.Assembly.CustomAttributes.FirstOrDefault(c => c.AttributeType.FullName == "TrixxInjection.Framework.Attributes.ConfiguratorAttribute");
+            if (ca is null)
+                return false;
+            foreach (var p in ca.Properties)
             {
-#if DEBUG
-                var message = "THISISASYMBOL - Derived Classes base Types in executing module\n" + string.Join(",\n",
-                    md.Types.Where(t => t.BaseType != null)
-                        .Select(t => $"{t.Name}: {t.BaseType.FullName} ({t.BaseType.Name})"));
-                That.WriteInfo(message);
-#endif
-                return (false, null);
+                var n = p.Name;
+                var a = (object)p.Argument.Value;
+                switch (n)
+                {
+                    case "LogFileName":
+                        conf[n] = (string)a;
+                        break;
+                    case "ObjectsToSquish":
+                        var oa = (CustomAttributeArgument[])a;
+                        var ol = new List<string>();
+                        foreach (var x in oa) ol.Add((string)x.Value);
+                        conf[n] = ol;
+                        break;
+                    case "ItemsToIgnore":
+                        var ia = (CustomAttributeArgument[])a;
+                        var il = new List<string>();
+                        foreach (var x in ia) il.Add((string)x.Value);
+                        conf[n] = il;
+                        break;
+                    case "AliasKeys":
+                        var ka = (CustomAttributeArgument[])a;
+                        var kl = new List<string>();
+                        foreach (var x in ka) kl.Add((string)x.Value);
+                        conf[n] = kl;
+                        break;
+                    case "AliasValues":
+                        var va = (CustomAttributeArgument[])a;
+                        var vl = new List<string>();
+                        foreach (var x in va) vl.Add((string)x.Value);
+                        conf[n] = vl;
+                        break;
+                    case "SourceSerialisedTiming":
+                        conf[n] = (SourceSerialisingTimingBehaviour)Convert.ToInt64(a);
+                        break;
+                    case "SourceSerialiseSettings":
+                        conf[n] = (SourceSerialiseBehaviour)Convert.ToInt64(a);
+                        break;
+                    case "GeneralBehaviour":
+                        conf[n] = (GeneralBehaviours)Convert.ToInt64(a);
+                        break;
+                }
             }
-
-            Dictionary<string, object> dict;
-            using (var cah = CustomAssemblyHandling.Enable(path))
-            {
-                var assembly = Assembly.LoadFrom(path);
-                var cr = (derived.BaseType.Namespace, derived.BaseType.Name, derived.BaseType.Module, derived.BaseType.Scope);
-                derived.BaseType = null; // Remove the base type, which is the dependancy the assembly couldnt resolve
-                var resolvedType = assembly.GetType(derived.FullName, true);
-                var instance = Activator.CreateInstance(resolvedType ?? throw new WeavingException(
-                    "Failed to resolve config type"
-                ));
-                var baseConfig = Activator.CreateInstance<Configurator>();
-                derived.BaseType = new TypeReference(cr.Namespace, cr.Name, cr.Module, cr.Scope); // Readd the base type AFTER creating the instance so it still compiles correctly
-                dict = typeof(Configurator)
-                    .GetProperties(BindingFlags.Public | BindingFlags.Instance)
-                    .Where(p => p.GetMethod.IsVirtual && !p.GetMethod.IsStatic)
-                    .ToDictionary(p => p.Name, p => p.GetValue(baseConfig));
-                resolvedType.GetProperties(BindingFlags.Public | BindingFlags.Instance)
-                    .Where(p => p.GetMethod.IsVirtual && !p.GetMethod.IsStatic).ToList().ForEach(p =>
-                        dict[p.Name] = p.GetValue(instance) // override defaults with those in the child class.
-                );
-            }
-
-            return (true, dict);
+            return true;
         }
 
-        public static Configurator CreateConfigFromDictionary(IDictionary<string, object> values)
+        public static ConfiguratorAttribute CreateConfigFromDictionary(IDictionary<string, object> values)
         {
-            var instance = new Configurator();
+            var instance = new ConfiguratorAttribute();
             foreach (var kvp in values)
             {
-                var property = typeof(Configurator).GetProperty(kvp.Key);
+                var property = typeof(ConfiguratorAttribute).GetProperty(kvp.Key);
                 if (property != null && property.CanWrite)
                 {
                     var value = kvp.Value;

@@ -38,7 +38,9 @@ namespace TrixxInjection.Fody
             var configureMethod =
                 W.TrixxInjection_Framework_ExpressionTree[AssemblyTypeMethodTree.FileHandling + ".StaticFileHandler",
                     "Configure"].M;
-            
+
+            var importedConfigureRef = W.ModuleDefinition.ImportReference(configureMethod);
+
             var moduleType = W.ModuleDefinition.Types.Single(t => t.Name == "<Module>");
             var cctor = moduleType.Methods.FirstOrDefault(m => m.Name == ".cctor");
             if (cctor == null)
@@ -58,7 +60,7 @@ namespace TrixxInjection.Fody
             var processor = cctor.Body.GetILProcessor();
             var first = cctor.Body.Instructions.First();
             processor.InsertBefore(first, processor.Create(OpCodes.Ldstr, ModuleWeaver.That.Configuration.LogFileName));
-            processor.InsertBefore(first, processor.Create(OpCodes.Call, configureMethod));
+            processor.InsertBefore(first, processor.Create(OpCodes.Call, importedConfigureRef));
         }
     }
 

@@ -75,7 +75,8 @@ namespace TrixxInjection.Fody
             var module = type.Module;
             var fin = new MethodDefinition(
                 "Finalize",
-                MethodAttributes.Family | MethodAttributes.Virtual | MethodAttributes.HideBySig | MethodAttributes.SpecialName,
+                MethodAttributes.Family | MethodAttributes.Virtual | MethodAttributes.HideBySig |
+                MethodAttributes.SpecialName,
                 module.TypeSystem.Void);
 
             MethodReference baseFinRef;

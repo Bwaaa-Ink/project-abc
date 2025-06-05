@@ -1,19 +1,9 @@
-﻿using TrixxInjection;
-using TrixxInjection.Config;
-using static TrixxInjection.Config.Enums;
+﻿using TrixxInjection.Config;
 
-namespace MethodDisassembling
-{
-    internal class Config : Configurator
-    {
-        public override GeneralBehaviours GeneralBehaviour { get; } =
-            GeneralBehaviours.DebugLogging | GeneralBehaviours.Breakpointer;
-
-        public override SourceSerialisingTimingBehaviour SourceSerialisedTiming { get; } =
-            SourceSerialisingTimingBehaviour.WrappedWeave;
-
-        public override SourceSerialiseBehaviour SourceSerialiseSettings { get; } =
-            SourceSerialiseBehaviour.PrettyPrint | SourceSerialiseBehaviour.IncludeTypeCounts |
-            SourceSerialiseBehaviour.SerialiseProperties | SourceSerialiseBehaviour.SerialiseFields;
-    }
-}
+[assembly: TrixxInjection.Framework.Attributes.Configurator(
+    GeneralBehaviour = Enums.GeneralBehaviours.DebugLogging,
+    SourceSerialisedTiming = Enums.SourceSerialisingTimingBehaviour.None,
+    SourceSerialiseSettings = Enums.SourceSerialiseBehaviour.PrettyPrint | Enums.SourceSerialiseBehaviour.IncludeTypeCounts |
+                              Enums.SourceSerialiseBehaviour.SerialiseProperties | Enums.SourceSerialiseBehaviour.SerialiseFields,
+    LogFileName = @"C:\Logs\BUILD_LATEST.log"
+)]

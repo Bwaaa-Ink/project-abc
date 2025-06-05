@@ -1,6 +1,6 @@
 ﻿using System;
 // ReSharper disable UnusedMember.Global
-namespace TrixxInjection.Attributes
+namespace TrixxInjection.Framework.Attributes
 {
     /// <summary>
     /// Add this to an object for it to be exclusively serialised.

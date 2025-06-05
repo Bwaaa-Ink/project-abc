@@ -3,7 +3,7 @@
 		<TargetFrameworks>net48;net452;netstandard2.0;netstandard2.1</TargetFrameworks>
 		<SignAssembly>true</SignAssembly>
 		<Authors>Trixxit</Authors>
-		<Version>2.0.10</Version>
+		<Version>2.0.26</Version>
 		<Description>Bwaaaa.</Description>
 		<NodeReuse>false</NodeReuse>
 		<PackageLicenseExpression>MIT</PackageLicenseExpression>
@@ -23,6 +23,21 @@
 			- ..8: Weave should now self support it's framework dll, and properly load it.
 			- ..9: 'Cannot find netstandard.dll' issue - immediete breakpointing enabled
 			- ..10: Decoupled Framework and Weaver, instead preferring to reference framework as an external package dependancy
+			- ..11: Build
+			- ..12: Changed LoadConfigurator from using a ValueTuple return to an out variable
+			- ..13: Refactored configuration to use an assembly attribute in the framework instead of a class, changed logic to account for this.
+			- ..14: Rebuild
+			- ..16: Relocated markers namespace from TrixxInjection.Attributes to TrixxInjection.Framework.Attributes and Forgot to update Framework in prior versions
+			- ..17: NuGet Fix?
+			- ..18: Updated attribute scan name to match actual
+			- ..19: Small change with attribute values
+			- ..20: Removed Configurator class completely and updated logic for attribute
+			- ..21: Fixed small issue where Config..Attribute was double named ( strong naming :c )
+			- ..22: [RELEASE BUILD] Improve config parsing method to actually function as intended and removed forced breaker.
+			- ..23: Back to debug build as things aren't working
+			- ..24: Fixed type-method tree death
+			- ..25: Disabled force debug breaking
+			- ..26: Fixed Configure Injection to actually use the correct reference
 		</PackageReleaseNotes>
 		<PackageOutputPath>$(SolutionDir)..\nugets</PackageOutputPath>
 		<RunPostBuildEvent>OnOutputUpdated</RunPostBuildEvent>
@@ -33,7 +48,7 @@
 	<ItemGroup>
 		<PackageReference Include="Fody" Version="6.6.4" PrivateAssets="none" />
 		<PackageReference Include="FodyPackaging" Version="6.6.4" PrivateAssets="All" />
-		<PackageReference Include="TrixxInjection.Framework" Version="1.0.0" />
+		<PackageReference Include="TrixxInjection.Framework" Version="1.0.2" />
 	</ItemGroup>
 
 	<Target Name="CopyLatestPackage" AfterTargets="Pack">
