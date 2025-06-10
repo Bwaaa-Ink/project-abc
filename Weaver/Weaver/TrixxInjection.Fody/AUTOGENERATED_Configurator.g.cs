@@ -1,7 +1,8 @@
-﻿using System;
+﻿#define DEV
+using System;
 using System.Collections.Generic;
 using System.IO;
-using TrixxInjection.Config;
+using TrixxInjection.Framework.Config;
 
 namespace TrixxInjection.Framework.Attributes
 {
@@ -26,6 +27,10 @@ namespace TrixxInjection.Framework.Attributes
             = Enums.SourceSerialiseBehaviour.SerialiseProperties
               | Enums.SourceSerialiseBehaviour.SerialiseFields
               | Enums.SourceSerialiseBehaviour.IncludeTypeCounts;
+#if DEV
+        public
+#endif
+            Enums.AttributeBreaking DEV__AttributesToBreakTo { get; set; }
 
         public Enums.GeneralBehaviours GeneralBehaviour { get; set; } = Enums.GeneralBehaviours.None;
 

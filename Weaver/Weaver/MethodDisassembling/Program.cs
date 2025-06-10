@@ -3,6 +3,7 @@ using System.ComponentModel.Design;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
+using TrixxInjection.Framework.Attributes;
 
 #pragma warning disable
 
@@ -28,6 +29,14 @@ namespace MethodDisassembling
             @class = new();
             @class.RunStopWatcher();
             AnEvent += (s) => { Console.WriteLine("Hmmmm"); };
+            @class = null;
+            var c2 = new Class2();
+            var c3 = new Class3();
+            c3.field = true;
+            c2 = null;
+            c3.field = false;
+            Thread.Sleep(2000);
+            c3 = null;
             Console.Read();
         }
 
@@ -76,7 +85,7 @@ namespace MethodDisassembling
     [Flags]
     public enum Numbers
     {
-        One,
+        One = 1,
         Two,
         Three,
         Four,
@@ -89,6 +98,7 @@ namespace MethodDisassembling
         Ten = 99
     }
 
+    [Creation]
     public class Class
     {
         public Class()
@@ -107,16 +117,19 @@ namespace MethodDisassembling
         }
     }
 
-
     public class Class2
     {
         public bool field = false;
     }
 
-
     public class Class3 : Class2
     {
         public new bool field = true;
+
+        ~Class3()
+        {
+            Console.WriteLine("Womp");
+        }
     }
 
     public class AnAttribute : Attribute;

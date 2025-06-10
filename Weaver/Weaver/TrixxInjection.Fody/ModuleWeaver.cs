@@ -8,9 +8,9 @@ using System.Linq;
 using System.IO;
 using System.Reflection;
 using System.Text;
-using TrixxInjection.FileHandling;
+using TrixxInjection.Framework.FileHandling;
 using TrixxInjection.Framework.Attributes;
-using static TrixxInjection.Config.Enums;
+using static TrixxInjection.Framework.Config.Enums;
 
 namespace TrixxInjection.Fody
 {
@@ -19,7 +19,7 @@ namespace TrixxInjection.Fody
     {
         public override bool ShouldCleanReference => true;
         public ConfiguratorAttribute Configuration = new ConfiguratorAttribute();
-        internal static ModuleWeaver That;
+        public static ModuleWeaver That;
         internal L L;
         internal SerialiseConfig SSC;
         internal AssemblyTypeMethodTree TrixxInjection_Framework_ExpressionTree;
@@ -186,6 +186,12 @@ namespace TrixxInjection.Fody
                     asm.Name == "TrixxInjection.Framework")));
         }
 
+        internal MethodReference Import(MethodDefinition mdef)
+            => ModuleDefinition.ImportReference(mdef);
+
+        internal MethodReference Import(MethodReference mdef)
+            => ModuleDefinition.ImportReference(mdef);
+
         private void CopyFrameworkFiles()
         {
             var frameworkRef = ModuleDefinition
@@ -299,6 +305,9 @@ namespace TrixxInjection.Fody
                         break;
                     case "GeneralBehaviour":
                         conf[n] = (GeneralBehaviours)Convert.ToInt64(a);
+                        break;
+                    case "DEV__AttributesToBreakTo":
+                        conf[n] = (AttributeBreaking)Convert.ToInt64(a);
                         break;
                 }
             }

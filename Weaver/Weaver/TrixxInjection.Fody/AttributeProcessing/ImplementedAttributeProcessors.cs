@@ -6,7 +6,9 @@ using System.Reflection;
 using System.Text;
 using Mono.Cecil;
 using Mono.Cecil.Cil;
-using TrixxInjection.FileHandling;
+using TrixxInjection.Framework.Config;
+using TrixxInjection.Framework.FileHandling;
+using This = TrixxInjection.Fody.ModuleWeaver;
 
 namespace TrixxInjection.Fody
 {
@@ -14,13 +16,7 @@ namespace TrixxInjection.Fody
     {
         static partial void Serialised(CustomAttribute attribute, TypeDefinition type)
         {
-            using (var writer = FileH.WriterFor(ModuleWeaver.That.Configuration.LogFileName))
-            {
-                L.W($"Explicitly Serialising {type.FullName}");
-                writer.Write("Serialising Object by Tag");
-                writer.WriteNoTime(new SourceSerialiser().Serialise(type, ModuleWeaver.That.SSC));
-                writer.Write("Finished Serialising Object by Tag");
-            }
+            AttributeBreak(Enums.AttributeBreaking.Serialised);
         }
 
         static partial void Ignored(CustomAttribute attribute, TypeDefinition type)
@@ -30,28 +26,30 @@ namespace TrixxInjection.Fody
 
         static partial void Timed(CustomAttribute attribute, TypeDefinition type)
         {
-            
+            AttributeBreak(Enums.AttributeBreaking.Timed);
         }
 
         static partial void Creation(CustomAttribute attribute, TypeDefinition type)
         {
+            AttributeBreak(Enums.AttributeBreaking.Creation);
             type.EnsureDefaultConstructor();
-            type.Methods.Where(m => m.IsConstructor).ToList().ForEach(m => StaticFileHandler.AddLog(m.Body, m.IsStatic ? $"INITIALISED [{type.FullName}]" : $"CREATED [{type.FullName}]"));
+            type.Methods.Where(m => m.IsConstructor).ToList().ForEach(m => m.Body.AddLog(m.IsStatic ? $"INITIALISED [{type.FullName}]" : $"CREATED [{type.FullName}]"));
         }
 
         static partial void Deletion(CustomAttribute attribute, TypeDefinition type)
         {
-            StaticFileHandler.AddLog(type.EnsureDefaultDestructor().Body, $"DESTROYED [{type.FullName}]");
+            AttributeBreak(Enums.AttributeBreaking.Deletion);
+            type.EnsureDefaultDestructor().Body.AddLog($"DESTROYED [{type.FullName}]");
         }
 
         static partial void MethodDetails(CustomAttribute attribute, TypeDefinition type)
         {
-
+            AttributeBreak(Enums.AttributeBreaking.MethodDetails);
         }
 
         static partial void Traced(CustomAttribute attribute, TypeDefinition type)
         {
-
+            AttributeBreak(Enums.AttributeBreaking.Traced);
         }
     }
 }

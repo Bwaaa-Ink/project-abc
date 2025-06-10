@@ -1,7 +1,7 @@
 ﻿using System;
 using System.IO;
 
-namespace TrixxInjection.FileHandling
+namespace TrixxInjection.Framework.FileHandling
 {
     public static class StaticFileHandler
     {
@@ -28,9 +28,12 @@ namespace TrixxInjection.FileHandling
             if (isReady)
                 return;
             StaticFileHandler.path = path;
+            Directory.CreateDirectory(Path.GetDirectoryName(path));
+            if (!File.Exists(path))
+                File.Create(path);
             fs = new FileStream(
                 path,
-                FileMode.Append,
+                FileMode.OpenOrCreate,
                 FileAccess.Write,
                 FileShare.ReadWrite
             );

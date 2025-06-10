@@ -3,6 +3,7 @@ using System.Linq;
 using System.Reflection;
 using Mono.Cecil;
 using Mono.Cecil.Cil;
+using TrixxInjection.Framework.Config;
 using MethodAttributes = Mono.Cecil.MethodAttributes;
 
 namespace TrixxInjection.Fody
@@ -39,7 +40,7 @@ namespace TrixxInjection.Fody
                 W.TrixxInjection_Framework_ExpressionTree[AssemblyTypeMethodTree.FileHandling + ".StaticFileHandler",
                     "Configure"].M;
 
-            var importedConfigureRef = W.ModuleDefinition.ImportReference(configureMethod);
+            var importedConfigureRef = W.Import(configureMethod);
 
             var moduleType = W.ModuleDefinition.Types.Single(t => t.Name == "<Module>");
             var cctor = moduleType.Methods.FirstOrDefault(m => m.Name == ".cctor");
@@ -57,17 +58,30 @@ namespace TrixxInjection.Fody
                 il.Append(il.Create(OpCodes.Ret));
             }
 
+
             var processor = cctor.Body.GetILProcessor();
             var first = cctor.Body.Instructions.First();
+
+            if (ModuleWeaver.That.Configuration.GeneralBehaviour.HasFlag(Enums.GeneralBehaviours.InjectDebugger))
+            {
+                var launchMethodRef = ModuleWeaver.That.ModuleDefinition.ImportReference(typeof(System.Diagnostics.Debugger).GetMethod("Launch", Type.EmptyTypes));
+                processor.InsertBefore(first, processor.Create(OpCodes.Call, launchMethodRef));
+                processor.InsertBefore(first, processor.Create(OpCodes.Pop));
+            }
+
             processor.InsertBefore(first, processor.Create(OpCodes.Ldstr, ModuleWeaver.That.Configuration.LogFileName));
             processor.InsertBefore(first, processor.Create(OpCodes.Call, importedConfigureRef));
+            processor.Append(processor.Create(OpCodes.Ret));
+
+            cctor.Body.InitLocals = false;
+            cctor.Body.MaxStackSize = 1;
         }
     }
 
     internal class ILProcessor : IDisposable
     {
         private static L L => ModuleWeaver.That.L;
-        private const string Namespace = "TrixxInjection.Attributes";
+        private const string Namespace = "TrixxInjection.Framework.Attributes";
         private readonly TypeDefinition Type;
 
         internal ILProcessor(TypeDefinition type)
@@ -89,16 +103,12 @@ namespace TrixxInjection.Fody
             }
 
             L.W($"Getting Processor for {attribute.AttributeType.Name}");
-            var processor = AttributeProcessors.GetProcessor(attribute.AttributeType.Name);
-            if (processor == null)
-            {
-                L.W($"{attribute.AttributeType.Name} has no processor.");
-                return;
-            }
-
             try
             {
-                processor(attribute, Type);
+                if (!AttributeProcessors.TryProcess(attribute.AttributeType.Name, attribute, Type))
+                {
+                    L.FW($"{attribute.AttributeType.Name} had no custom implementation");
+                }
             }
             catch (Exception ex)
             {

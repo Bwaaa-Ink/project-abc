@@ -1,7 +1,7 @@
 ﻿using System;
 using System.IO;
 
-namespace TrixxInjection.FileHandling
+namespace TrixxInjection.Framework.FileHandling
 {
     public class FileH : IDisposable
     {

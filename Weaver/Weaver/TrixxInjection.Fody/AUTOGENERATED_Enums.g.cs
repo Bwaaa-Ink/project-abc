@@ -1,7 +1,7 @@
 ﻿using System;
 
 // ReSharper disable once CheckNamespace
-namespace TrixxInjection.Config
+namespace TrixxInjection.Framework.Config
 {
     /// <summary>
     /// Defines enumerations used between the Weaver and Consuming Packager.
@@ -31,9 +31,13 @@ namespace TrixxInjection.Config
             /// </summary>
             RecordLogs = 0b100,
             /// <summary>
+            /// Injects a Diagnostic launch call into the Module constructor
+            /// </summary>
+            InjectDebugger = 0b1000,
+            /// <summary>
             /// Toggles all above debugging flags
             /// </summary>
-            Debugging = 0b111,
+            Debugging = byte.MaxValue,
         }
 
         /// <summary>
@@ -132,6 +136,17 @@ namespace TrixxInjection.Config
             /// Includes a list of types and how many of that type the weaver serialised.
             /// </summary>
             IncludeTypeCounts = 0x800,
+        }
+
+        [Flags]
+        public enum AttributeBreaking
+        {
+            Creation = 0b1,
+            Deletion = 0b10,
+            MethodDetails = 0b100,
+            Serialised = 0b1000,
+            Timed = 0b10000,
+            Traced = 0b100000,
         }
     }
 }

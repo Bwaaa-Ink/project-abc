@@ -8,7 +8,7 @@
 	  <Description>[ THIS PACKAGE IS NOT INTENDED TO BE USED AS A STANDALONE ] 
 Contains supporting user-end logic / functionality to control the weaver included in the parent package.</Description>
 	  <PackageOutputPath>$(SolutionDir)..\..\..\nugets.local</PackageOutputPath>
-	  <Version>1.0.2</Version>
+	  <Version>1.0.8</Version>
 	  <PackageId>TrixxInjection.Framework</PackageId>
 	  <PackAsTool>false</PackAsTool>
 	  <IsPackable>true</IsPackable>

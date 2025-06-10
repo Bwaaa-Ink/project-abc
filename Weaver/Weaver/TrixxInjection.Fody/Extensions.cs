@@ -7,7 +7,7 @@ using System.Text;
 using Fody;
 using Mono.Cecil;
 using Mono.Cecil.Cil;
-using TrixxInjection.Config;
+using TrixxInjection.Framework.Config;
 using MethodAttributes = Mono.Cecil.MethodAttributes;
 
 namespace TrixxInjection.Fody
