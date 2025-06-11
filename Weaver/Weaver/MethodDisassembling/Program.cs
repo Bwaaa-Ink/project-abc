@@ -26,6 +26,15 @@ namespace MethodDisassembling
         static void Main(string[] args)
         {
             Console.WriteLine("Hello, World!");
+            Bwaaa();
+            Thread.Sleep(2000);
+            Console.WriteLine("Bwaaaa");
+            Console.Read();
+            GC.Collect();
+        }
+
+        public static void Bwaaa()
+        {
             @class = new();
             @class.RunStopWatcher();
             AnEvent += (s) => { Console.WriteLine("Hmmmm"); };
@@ -35,9 +44,8 @@ namespace MethodDisassembling
             c3.field = true;
             c2 = null;
             c3.field = false;
-            Thread.Sleep(2000);
             c3 = null;
-            Console.Read();
+            Console.WriteLine("Set to null");
         }
 
         public static void M2()
@@ -99,6 +107,7 @@ namespace MethodDisassembling
     }
 
     [Creation]
+    [Deletion]
     public class Class
     {
         public Class()
@@ -117,11 +126,15 @@ namespace MethodDisassembling
         }
     }
 
+    [Creation]
+    [Deletion]
     public class Class2
     {
         public bool field = false;
     }
 
+    [Creation]
+    [Deletion]
     public class Class3 : Class2
     {
         public new bool field = true;

@@ -27,7 +27,7 @@ namespace TrixxInjection.Fody
                         return false;
 
                     return ps[0].ParameterType == typeof(CustomAttribute)
-                        && ps[1].ParameterType == typeof(TypeDefinition);
+                           && ps[1].ParameterType == typeof(EntityUnion);
                 });
 
             foreach (var mi in methods)
@@ -43,7 +43,7 @@ namespace TrixxInjection.Fody
             return null;
         }
 
-        public static bool TryProcess(string attributeName, CustomAttribute ca, TypeDefinition td)
+        public static bool TryProcess(string attributeName, CustomAttribute ca, EntityUnion td)
         {
             if (!MethodTree.TryGetValue(attributeName, out var mi))
                 return false;
@@ -58,6 +58,59 @@ namespace TrixxInjection.Fody
                 return;
             Debugger.Launch();
             Debugger.Break();
+        }
+
+        internal class EntityUnion
+        {
+            private readonly MethodDefinition _method = null;
+            private readonly TypeDefinition _type = null;
+            private readonly PropertyDefinition _prop = null;
+            private readonly EventDefinition _event = null;
+            private readonly FieldDefinition _field = null;
+            private readonly AssemblyDefinition _assembly = null;
+            private readonly ParameterDefinition _param = null;
+
+            public static implicit operator MethodDefinition(EntityUnion tmu) => tmu._method;
+            public static implicit operator TypeDefinition(EntityUnion tmu) => tmu._type;
+            public static implicit operator PropertyDefinition(EntityUnion au) => au._prop;
+            public static implicit operator EventDefinition(EntityUnion au) => au._event;
+            public static implicit operator FieldDefinition(EntityUnion au) => au._field;
+            public static implicit operator AssemblyDefinition(EntityUnion au) => au._assembly;
+            public static implicit operator ParameterDefinition(EntityUnion au) => au._param;
+
+            public EntityUnion(PropertyDefinition prop) => _prop = prop;
+            public EntityUnion(EventDefinition evt) => _event = evt;
+            public EntityUnion(FieldDefinition field) => _field = field;
+            public EntityUnion(AssemblyDefinition asm) => _assembly = asm;
+            public EntityUnion(ParameterDefinition prm) => _param = prm;
+            public EntityUnion(TypeDefinition type) => _type = type;
+            public EntityUnion(MethodDefinition method) => _method = method;
+
+            public static implicit operator EntityUnion(MethodDefinition md) => new EntityUnion(md);
+            public static implicit operator EntityUnion(TypeDefinition td) => new EntityUnion(td);
+            public static implicit operator EntityUnion(PropertyDefinition pd) => new EntityUnion(pd);
+            public static implicit operator EntityUnion(EventDefinition ed) => new EntityUnion(ed);
+            public static implicit operator EntityUnion(FieldDefinition fd) => new EntityUnion(fd);
+            public static implicit operator EntityUnion(AssemblyDefinition ad) => new EntityUnion(ad);
+            public static implicit operator EntityUnion(ParameterDefinition prm) => new EntityUnion(prm);
+
+            public PropertyDefinition Prop => this;
+            public EventDefinition Event => this;
+            public FieldDefinition Field => this;
+            public AssemblyDefinition Assembly => this;
+            public ParameterDefinition Param => this;
+            public TypeDefinition Type => this;
+            public MethodDefinition Method => this;
+
+            public string FullName => Prop?.FullName ??
+                                      Event?.FullName ??
+                                      Field?.FullName ??
+                                      Assembly?.FullName ??
+                                      Param?.Name ??
+                                      Type?.FullName ??
+                                      Method?.FullName ??
+                                      "Union has no name";
+
         }
     }
 }

@@ -41,13 +41,13 @@ rem --- generate the AttributeProcessors file
 )
 
 for /f "usebackq delims=" %%A in ("%~dp0classes.tmp") do (
-  >>"%dst%" echo         static partial void %%A^(CustomAttribute attribute, TypeDefinition type^);
+  >>"%dst%" echo         static partial void %%A^(CustomAttribute attribute, AttributeUnion type^);
 )
 
 >>"%dst%" echo.
 
 for /f "usebackq delims=" %%A in ("%~dp0classes.tmp") do (
-  >>"%dst%" echo         public static void %%A_Exposer^(CustomAttribute attribute, TypeDefinition type^) =^> %%A^(attribute, type^);
+  >>"%dst%" echo         public static void %%A_Exposer^(CustomAttribute attribute, AttributeUnion type^) =^> %%A^(attribute, type^);
 )
 
 >>"%dst%" (

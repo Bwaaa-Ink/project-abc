@@ -9,6 +9,8 @@ using Mono.Cecil;
 using Mono.Cecil.Cil;
 using TrixxInjection.Framework.Config;
 using MethodAttributes = Mono.Cecil.MethodAttributes;
+using MethodBody = Mono.Cecil.Cil.MethodBody;
+using TypeAttributes = Mono.Cecil.TypeAttributes;
 
 namespace TrixxInjection.Fody
 {
@@ -104,6 +106,65 @@ namespace TrixxInjection.Fody
             type.Methods.Add(fin);
             return fin;
         }
+
+        public static void AddLog(this MethodBody body, string message, Instruction location = null, bool after = false)
+        {
+            var il = body.GetILProcessor();
+            var writeDef =
+                ModuleWeaver.That.TrixxInjection_Framework_ExpressionTree[
+                    "TrixxInjection.Framework.FileHandling.StaticFileHandler", "Write"].M;
+            var writeRef = ModuleWeaver.That.Import(writeDef);
+            location = location ?? body.Instructions.First();
+            if (after)
+            {
+                il.InsertAfter(location, il.Create(OpCodes.Call, writeRef));
+                il.InsertAfter(location, il.Create(OpCodes.Ldstr, message));
+            }
+            else
+            {
+                il.InsertBefore(location, il.Create(OpCodes.Ldstr, message));
+                il.InsertBefore(location, il.Create(OpCodes.Call, writeRef));
+            }
+        }
+
+        public static void Prepend(this MethodBody body, params Instruction[] instructions)
+        {
+            var processor = body.GetILProcessor();
+            var initial = body.Instructions.First();
+            for (int i = 0; i < instructions.Length; i++)
+            {
+                var instruction = instructions[i];
+                processor.InsertBefore(initial, instruction);
+            }
+        }
+
+        public static void Append(this MethodBody body, params Instruction[] instructions)
+        {
+            var processor = body.GetILProcessor();
+            var initial = body.Instructions.Last();
+            if (instructions[instructions.Length - 1].OpCode != OpCodes.Ret)
+                throw new WeavingException("Tried to Append instruction set to body without a finalising return code!");
+            processor.Replace(initial, instructions[0]);
+            for (int i = 1; i < instructions.Length; i++)
+            {
+                var instruction = instructions[i];
+                processor.InsertAfter(instructions[0], instruction);
+            }
+        }
+
+        public static void AppendUnsafe(this MethodBody body, params Instruction[] instructions)
+        {
+            var processor = body.GetILProcessor();
+            var initial = body.Instructions.Last();
+            for (int i = 0; i < instructions.Length; i++)
+            {
+                var instruction = instructions[i];
+                processor.InsertAfter(initial, instruction);
+            }
+        }
+
+        public static MethodReference GetMethodRef<T>(this T type, string methodName, Type[] argTypes = null)
+            => ModuleWeaver.That.ModuleDefinition.ImportReference(typeof(T).GetMethod(methodName, argTypes ?? Type.EmptyTypes));
     }
 
     internal class Logging

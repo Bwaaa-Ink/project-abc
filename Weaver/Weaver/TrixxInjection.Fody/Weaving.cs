@@ -82,11 +82,11 @@ namespace TrixxInjection.Fody
     {
         private static L L => ModuleWeaver.That.L;
         private const string Namespace = "TrixxInjection.Framework.Attributes";
-        private readonly TypeDefinition Type;
+        private readonly AttributeProcessors.EntityUnion Entity;
 
-        internal ILProcessor(TypeDefinition type)
+        internal ILProcessor(AttributeProcessors.EntityUnion entity)
         {
-            Type = type;
+            Entity = entity;
         }
 
         public void Dispose()
@@ -105,14 +105,14 @@ namespace TrixxInjection.Fody
             L.W($"Getting Processor for {attribute.AttributeType.Name}");
             try
             {
-                if (!AttributeProcessors.TryProcess(attribute.AttributeType.Name, attribute, Type))
+                if (!AttributeProcessors.TryProcess(attribute.AttributeType.Name, attribute, Entity))
                 {
                     L.FW($"{attribute.AttributeType.Name} had no custom implementation");
                 }
             }
             catch (Exception ex)
             {
-                L.FW($"Processing {attribute.AttributeType.Name} on {Type.FullName} threw a(n) {ex.GetType().FullName}: {ex.Message ?? "No message attached."}");
+                L.FW($"Processing {attribute.AttributeType.Name} on {Entity.FullName} threw a(n) {ex.GetType().FullName}: {ex.Message ?? "No message attached."}");
             }
         }
     }
