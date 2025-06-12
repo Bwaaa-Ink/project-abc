@@ -54,24 +54,24 @@ namespace TrixxInjection.Fody
                     | MethodAttributes.SpecialName
                     | MethodAttributes.RTSpecialName, ModuleWeaver.That.ModuleDefinition.TypeSystem.Void);
                 moduleType.Methods.Add(cctor);
-                var il = cctor.Body.GetILProcessor();
-                il.Append(il.Create(OpCodes.Ret));
             }
 
 
-            var processor = cctor.Body.GetILProcessor();
+            var processor = (Processor)cctor.Body.GetILProcessor();
             var first = cctor.Body.Instructions.First();
+            processor.MoveTo(first, false);
 
-            if (ModuleWeaver.That.Configuration.GeneralBehaviour.HasFlag(Enums.GeneralBehaviours.InjectDebugger))
+            if (W.Configuration.GeneralBehaviour.HasFlag(Enums.GeneralBehaviours.InjectDebugger))
             {
-                var launchMethodRef = ModuleWeaver.That.ModuleDefinition.ImportReference(typeof(System.Diagnostics.Debugger).GetMethod("Launch", Type.EmptyTypes));
-                processor.InsertBefore(first, processor.Create(OpCodes.Call, launchMethodRef));
-                processor.InsertBefore(first, processor.Create(OpCodes.Pop));
+                processor
+                    .CallStatic(typeof(System.Diagnostics.Debugger).GetMethodRef("Launch"))
+                    .Pop();
             }
 
-            processor.InsertBefore(first, processor.Create(OpCodes.Ldstr, ModuleWeaver.That.Configuration.LogFileName));
-            processor.InsertBefore(first, processor.Create(OpCodes.Call, importedConfigureRef));
-            processor.Append(processor.Create(OpCodes.Ret));
+            processor
+                .PushString(W.Configuration.LogFileName)
+                .CallStatic(importedConfigureRef)
+                .Return();
 
             cctor.Body.InitLocals = false;
             cctor.Body.MaxStackSize = 1;

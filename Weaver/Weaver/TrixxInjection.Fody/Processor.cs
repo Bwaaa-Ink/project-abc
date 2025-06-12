@@ -1,4 +1,7 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Reflection;
 using Fody;
 using Mono.Cecil;
 using Mono.Cecil.Cil;
@@ -9,12 +12,15 @@ namespace TrixxInjection.Fody
     {
         private readonly Mono.Cecil.Cil.ILProcessor _processor;
         private Instruction _target;
+        internal SimulatedBody _simulation = null;
 
         /// <summary>
         /// Determines whether new instructions will be inserted immediately after
         /// (<c>true</c>) or immediately before (<c>false</c>) the current target.
         /// </summary>
         public bool AfterTarget { get; private set; } = true;
+
+        public bool AutoShift { get; private set; } = true;
 
         /// <summary>
         /// Initializes a new <see cref="Processor"/> around the given Cecil
@@ -32,6 +38,33 @@ namespace TrixxInjection.Fody
             _processor = processor ?? throw new ArgumentNullException(nameof(processor));
             MoveTo(target, after: true);
         }
+
+        public Processor InsertSequence(IEnumerable<Instruction> instructions)
+        {
+            if (_target == null)
+                throw new WeavingException("Processor target cannot be null");
+            if (AfterTarget)
+            {
+                var current = _target;
+                foreach (var instr in instructions)
+                {
+                    _processor.InsertAfter(current, instr);
+                    current = instr;
+                }
+            }
+            else
+            {
+                foreach (var instr in instructions.Reverse())
+                    _processor.InsertBefore(_target, instr);
+            }
+            return this;
+        }
+
+        private Processor(Mono.Cecil.Cil.ILProcessor processor)
+            => _processor = processor ?? throw new ArgumentNullException(nameof(processor));
+
+        public static explicit operator Processor(Mono.Cecil.Cil.ILProcessor processor)
+            => new Processor(processor);
 
         /// <summary>
         /// Changes the insertion point to <paramref name="newTarget"/>, and
@@ -63,10 +96,43 @@ namespace TrixxInjection.Fody
             if (_target == null)
                 throw new WeavingException("Processor target cannot be null");
 
+            Action<Instruction, Instruction> after = delegate (Instruction target, Instruction _instruction)
+            {
+                if (_simulation == null)
+                    _processor.InsertAfter(target, _instruction);
+                else
+                    _simulation.InsertAfter(target, _instruction);
+            };
+
+            Action<Instruction, Instruction> before = delegate (Instruction target, Instruction _instruction)
+            {
+                if (_simulation == null)
+                    _processor.InsertBefore(target, _instruction);
+                else
+                    _simulation.InsertBefore(target, _instruction);
+            };
+
+
             if (AfterTarget)
-                _processor.InsertAfter(_target, instruction);
+                after(_target, instruction);
             else
-                _processor.InsertBefore(_target, instruction);
+                before(_target, instruction);
+        }
+
+        /// <summary>
+        /// Emits a <c>call</c> to a static method. Use this when the target
+        /// <paramref name="method"/> has no <c>this</c> parameter.
+        /// </summary>
+        /// <param name="method">The static <see cref="MethodInfo"/> to import and then call.</param>
+        public Processor CallStatic(MethodInfo mi)
+        {
+            var method = ImportReference(mi);
+            if (method == null) throw new ArgumentNullException(nameof(method));
+            if (method.HasThis)
+                throw new WeavingException("Cannot static call an instance method");
+
+            Insert(Instruction.Create(OpCodes.Call, method));
+            return this;
         }
 
         /// <summary>
@@ -94,9 +160,13 @@ namespace TrixxInjection.Fody
         /// </param>
         public Processor CallStatic(MethodReference method, params object[] args)
         {
-            foreach (var arg in args)
-                Push(arg);
-            return CallStatic(method);
+            using (AutoSimulation)
+            {
+                foreach (var arg in args)
+                    Push(arg);
+                CallStatic(method);
+            }
+            return this;
         }
 
         /// <summary>
@@ -113,18 +183,20 @@ namespace TrixxInjection.Fody
             if (method == null) throw new ArgumentNullException(nameof(method));
             if (!method.HasThis || method.ExplicitThis)
                 throw new WeavingException("Cannot instance call a static or explicit instance method");
+            using (AutoSimulation)
+            {
+                if (instance is ParameterDefinition p)
+                    LoadArg(p);
+                else if (instance is VariableDefinition v)
+                    LoadLocalVariable(v);
+                else
+                    throw new WeavingException($"Unsupported instance loader for type {instance.GetType()}");
 
-            if (instance is ParameterDefinition p)
-                LoadArg(p);
-            else if (instance is VariableDefinition v)
-                LoadLocalVariable(v);
-            else
-                throw new WeavingException($"Unsupported instance loader for type {instance.GetType()}");
-
-            var opcode = method.Resolve()?.IsVirtual == true
-                ? OpCodes.Callvirt
-                : OpCodes.Call;
-            Insert(Instruction.Create(opcode, method));
+                var opcode = method.Resolve()?.IsVirtual == true
+                    ? OpCodes.Callvirt
+                    : OpCodes.Call;
+                Insert(Instruction.Create(opcode, method));
+            }
             return this;
         }
 
@@ -141,10 +213,26 @@ namespace TrixxInjection.Fody
         /// </param>
         public Processor Call(MethodReference method, object instance, params object[] args)
         {
-            Call(method, instance);
-            foreach (var arg in args)
-                Push(arg);
-            // TODO: VERIFY THAT ARGS ARE LOADED BEFORE / AFTER METHOD CALL
+            if (method == null) throw new ArgumentNullException(nameof(method));
+            if (!method.HasThis || method.ExplicitThis)
+                throw new WeavingException("Cannot instance call a static or explicit instance method");
+            using (AutoSimulation)
+            {
+                if (instance is ParameterDefinition p)
+                    LoadArg(p);
+                else if (instance is VariableDefinition v)
+                    LoadLocalVariable(v);
+                else
+                    throw new WeavingException($"Unsupported instance loader for type {instance.GetType()}");
+
+                foreach (var arg in args)
+                    Push(arg);
+
+                var opcode = method.Resolve()?.IsVirtual == true
+                    ? OpCodes.Callvirt
+                    : OpCodes.Call;
+                Insert(Instruction.Create(opcode, method));
+            }
             return this;
         }
 
@@ -574,14 +662,14 @@ namespace TrixxInjection.Fody
         }
 
         /// <summary>Shifts the second value left by the top (<c>shl</c>).</summary>
-        public Processor Shl()
+        public Processor ShiftLeft()
         {
             Insert(Instruction.Create(OpCodes.Shl));
             return this;
         }
 
         /// <summary>Shifts the second value right by the top (<c>shr</c>).</summary>
-        public Processor Shr()
+        public Processor ShiftRight()
         {
             Insert(Instruction.Create(OpCodes.Shr));
             return this;

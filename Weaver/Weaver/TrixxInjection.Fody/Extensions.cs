@@ -29,8 +29,9 @@ namespace TrixxInjection.Fody
                 .ToArray();
         }
 
-        public static MethodDefinition EnsureDefaultConstructor(this TypeDefinition type, bool @static = false)
+        public static MethodDefinition EnsureDefaultConstructor(this TypeDefinition type)
         {
+            const bool @static = false;
             var name = @static ? ".cctor" : ".ctor";
             var existing = type.Methods.FirstOrDefault(m =>
                 m.Name == name && m.IsStatic == @static && m.Parameters.Count == 0);
@@ -109,21 +110,17 @@ namespace TrixxInjection.Fody
 
         public static void AddLog(this MethodBody body, string message, Instruction location = null, bool after = false)
         {
-            var il = body.GetILProcessor();
+            var il = (Processor)body.GetILProcessor();
             var writeDef =
                 ModuleWeaver.That.TrixxInjection_Framework_ExpressionTree[
                     "TrixxInjection.Framework.FileHandling.StaticFileHandler", "Write"].M;
             var writeRef = ModuleWeaver.That.Import(writeDef);
             location = location ?? body.Instructions.First();
-            if (after)
+            il.MoveTo(location, after);
+            using (il.AutoSimulation)
             {
-                il.InsertAfter(location, il.Create(OpCodes.Call, writeRef));
-                il.InsertAfter(location, il.Create(OpCodes.Ldstr, message));
-            }
-            else
-            {
-                il.InsertBefore(location, il.Create(OpCodes.Ldstr, message));
-                il.InsertBefore(location, il.Create(OpCodes.Call, writeRef));
+                il.PushString(message);
+                il.CallStatic(writeRef);
             }
         }
 

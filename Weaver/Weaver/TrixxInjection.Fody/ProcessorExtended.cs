@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using Mono.Cecil.Cil;
 using Mono.Cecil;
 using System.Collections.Generic;
@@ -37,7 +38,7 @@ namespace TrixxInjection.Fody
                 body.ExceptionHandlers.Add(new ExceptionHandler(ExceptionHandlerType.Catch)
                 {
                     TryStart = tryStart,
-                    TryEnd = tryEnd,
+                    TryEnd = tryEnd.Next,
                     HandlerStart = hStart,
                     HandlerEnd = hEnd,
                     CatchType = catchType
@@ -83,6 +84,7 @@ namespace TrixxInjection.Fody
         /// <summary>
         /// Inserts a sequence of IL instructions at the very start of the method, so, before the first instruction
         /// </summary>
+        /// <remark>Remember to wrap in a simulation for multi-instruction actions</remark>
         public Processor InsertOnEntry(Action<Processor> emit)
         {
             var first = _processor.Body.Instructions[0];
@@ -93,18 +95,16 @@ namespace TrixxInjection.Fody
 
         /// <summary>
         /// Finds all <c>ret</c> (return) instructions in the method and, for each one,
-        /// runs <paramref name="emit"/> immediately before it. Good for clean ups???
+        /// runs <paramref name="emit"/> immediately before it. Good for clean-ups???
         /// </summary>
+        /// <remark>Remember to wrap in a simulation for multi-instruction actions</remark>
         public Processor InsertOnExit(Action<Processor> emit)
         {
-            var returns = new List<Instruction>(_processor.Body.Instructions);
-            foreach (var instr in returns)
+            foreach (var instr in _processor.Body.Instructions)
             {
-                if (instr.OpCode == OpCodes.Ret)
-                {
-                    MoveTo(instr, after: false);
-                    emit(this);
-                }
+                if (instr.OpCode != OpCodes.Ret) continue;
+                MoveTo(instr, after: false);
+                emit(this);
             }
             return this;
         }
@@ -181,6 +181,57 @@ namespace TrixxInjection.Fody
             };
             _processor.Body.Method.DebugInformation.SequencePoints.Add(sp);
             return this;
+        }
+
+        public SimulatedBody Simulation
+            => SimulatedBody.New(this);
+
+        public SimulatedBody AutoSimulation
+            => SimulatedBody.NewWithAutoCommit(this);
+
+        public class SimulatedBody : IDisposable
+        {
+            private readonly Processor _parent;
+            private readonly bool _autoCommit = false;
+            private List<Instruction> _instructions = new List<Instruction>();
+            internal IEnumerable<Instruction> Instructions => _instructions;
+
+            internal static SimulatedBody New(Processor parent)
+                => new SimulatedBody(parent, false);
+
+            internal static SimulatedBody NewWithAutoCommit(Processor parent)
+                => new SimulatedBody(parent, true);
+
+
+            private SimulatedBody(Processor parent, bool autoCommit)
+            {
+                _parent = parent;
+                _autoCommit = autoCommit;
+                parent._simulation = this;
+            }
+
+            internal void InsertAfter(Instruction i1, Instruction i2)
+            {
+                if (!_instructions.Contains(i1))
+                    _instructions.Add(i2);
+                else
+                    _instructions.Insert(_instructions.IndexOf(i1) + 1, i2);
+            }
+
+            internal void InsertBefore(Instruction i1, Instruction i2)
+            {
+                if (!_instructions.Contains(i1))
+                    _instructions.Add(i2);
+                else
+                    _instructions.Insert(_instructions.IndexOf(i1), i2);
+            }
+
+            public void Dispose()
+            {
+                if (_autoCommit)
+                    _parent.InsertSequence(Instructions);
+                _parent._simulation = null;
+            }
         }
     }
 }
