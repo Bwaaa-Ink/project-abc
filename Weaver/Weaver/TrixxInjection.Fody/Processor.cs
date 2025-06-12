@@ -20,7 +20,7 @@ namespace TrixxInjection.Fody
         /// </summary>
         public bool AfterTarget { get; private set; } = true;
 
-        public bool AutoShift { get; private set; } = true;
+        public bool AutoShift { get; private set; } = false;
 
         /// <summary>
         /// Initializes a new <see cref="Processor"/> around the given Cecil
@@ -54,7 +54,7 @@ namespace TrixxInjection.Fody
             }
             else
             {
-                foreach (var instr in instructions.Reverse())
+                foreach (var instr in instructions)
                     _processor.InsertBefore(_target, instr);
             }
             return this;
@@ -96,7 +96,7 @@ namespace TrixxInjection.Fody
             if (_target == null)
                 throw new WeavingException("Processor target cannot be null");
 
-            Action<Instruction, Instruction> after = delegate (Instruction target, Instruction _instruction)
+            Action<Instruction, Instruction> after = (target, _instruction) =>
             {
                 if (_simulation == null)
                     _processor.InsertAfter(target, _instruction);
@@ -104,7 +104,7 @@ namespace TrixxInjection.Fody
                     _simulation.InsertAfter(target, _instruction);
             };
 
-            Action<Instruction, Instruction> before = delegate (Instruction target, Instruction _instruction)
+            Action<Instruction, Instruction> before = (target, _instruction) =>
             {
                 if (_simulation == null)
                     _processor.InsertBefore(target, _instruction);
@@ -117,6 +117,9 @@ namespace TrixxInjection.Fody
                 after(_target, instruction);
             else
                 before(_target, instruction);
+
+            if (AutoShift)
+                _target = instruction;
         }
 
         /// <summary>

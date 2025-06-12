@@ -1,11 +1,11 @@
 ﻿using TrixxInjection.Framework.Config;
 
 [assembly: TrixxInjection.Framework.Attributes.Configurator(
-    //GeneralBehaviour =
-    //    //Enums.GeneralBehaviours.InjectDebugger 
-    //    //               | 
-    //    Enums.GeneralBehaviours.Breakpointer
-    //,
+    GeneralBehaviour =
+    //Enums.GeneralBehaviours.InjectDebugger 
+    //                   | 
+    Enums.GeneralBehaviours.Breakpointer
+    ,
     SourceSerialisedTiming = Enums.SourceSerialisingTimingBehaviour.None,
     SourceSerialiseSettings = Enums.SourceSerialiseBehaviour.PrettyPrint | Enums.SourceSerialiseBehaviour.IncludeTypeCounts |
                               Enums.SourceSerialiseBehaviour.SerialiseProperties | Enums.SourceSerialiseBehaviour.SerialiseFields,

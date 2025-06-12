@@ -3,7 +3,7 @@
 		<TargetFrameworks>net48;net452;netstandard2.0;netstandard2.1</TargetFrameworks>
 		<SignAssembly>true</SignAssembly>
 		<Authors>Trixxit</Authors>
-		<Version>2.0.42</Version>
+		<Version>2.0.45</Version>
 		<Description>Bwaaaa.</Description>
 		<NodeReuse>false</NodeReuse>
 		<PackageLicenseExpression>MIT</PackageLicenseExpression>
@@ -54,6 +54,9 @@
 			- ..40: Added a Return code to the module constructor... whoops
 			- ..41: Added a pop, might need that yk
 			- ..42: Resolved incorrect method path naming. ( I keep forgetting the .Framework :c )
+			- ..43: Huge backend overall, now with a nice IL wrapper for easier writing. Needs to test to see if it all works now.
+			- ..44: Added what could be a redundant return (redundant in some cases)
+			- ..45: Corrected improper instruction sequence inversion.
 		</PackageReleaseNotes>
 		<PackageOutputPath>$(SolutionDir)..\nugets</PackageOutputPath>
 		<RunPostBuildEvent>OnOutputUpdated</RunPostBuildEvent>

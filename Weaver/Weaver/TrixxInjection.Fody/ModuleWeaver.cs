@@ -184,6 +184,7 @@ namespace TrixxInjection.Fody
             TrixxInjection_Framework_ExpressionTree = new AssemblyTypeMethodTree(ModuleDefinition.AssemblyResolver.Resolve(
                 ModuleWeaver.That.ModuleDefinition.AssemblyReferences.First(asm =>
                     asm.Name == "TrixxInjection.Framework")));
+            TrixxInjection_Framework_ExpressionTree.CompileHighUseReferences();
         }
 
         internal MethodReference Import(MethodDefinition mdef)

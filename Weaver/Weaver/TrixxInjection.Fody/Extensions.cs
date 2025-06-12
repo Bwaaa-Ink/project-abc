@@ -111,10 +111,7 @@ namespace TrixxInjection.Fody
         public static void AddLog(this MethodBody body, string message, Instruction location = null, bool after = false)
         {
             var il = (Processor)body.GetILProcessor();
-            var writeDef =
-                ModuleWeaver.That.TrixxInjection_Framework_ExpressionTree[
-                    "TrixxInjection.Framework.FileHandling.StaticFileHandler", "Write"].M;
-            var writeRef = ModuleWeaver.That.Import(writeDef);
+            var writeRef = ModuleWeaver.That.TrixxInjection_Framework_ExpressionTree.CompiledReferences["TrixxInjection.Framework.FileHandling.StaticFileHandler.Write"];
             location = location ?? body.Instructions.First();
             il.MoveTo(location, after);
             using (il.AutoSimulation)

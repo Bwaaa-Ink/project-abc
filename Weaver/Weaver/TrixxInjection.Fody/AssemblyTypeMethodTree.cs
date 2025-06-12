@@ -34,6 +34,17 @@ namespace TrixxInjection.Fody
                     ? (expr.Item2.TryGetValue(method, out var _methods) ? (TypeMethodUnion)(_methods.First(func ?? (d => true))) : null)
                     : (TypeMethodUnion)expr.Item1)
                 : null;
+
+        public Dictionary<string, MethodReference> CompiledReferences = new Dictionary<string, MethodReference>();
+
+        public void CompileHighUseReferences()
+        {
+            var writeDef =
+                ModuleWeaver.That.TrixxInjection_Framework_ExpressionTree[
+                    "TrixxInjection.Framework.FileHandling.StaticFileHandler", "Write"].M;
+            var writeRef = ModuleWeaver.That.Import(writeDef);
+            CompiledReferences.Add("TrixxInjection.Framework.FileHandling.StaticFileHandler.Write", writeRef);
+        }
     }
 
 

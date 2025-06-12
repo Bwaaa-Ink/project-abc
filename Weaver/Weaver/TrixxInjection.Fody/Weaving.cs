@@ -54,6 +54,7 @@ namespace TrixxInjection.Fody
                     | MethodAttributes.SpecialName
                     | MethodAttributes.RTSpecialName, ModuleWeaver.That.ModuleDefinition.TypeSystem.Void);
                 moduleType.Methods.Add(cctor);
+                cctor.Body.GetILProcessor().Append(Instruction.Create(OpCodes.Ret));
             }
 
 
