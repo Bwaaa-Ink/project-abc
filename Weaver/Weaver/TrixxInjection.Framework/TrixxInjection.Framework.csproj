@@ -1,0 +1,21 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+	  <TargetFrameworks>net48;net452;netstandard2.0;netstandard2.1;net472</TargetFrameworks>
+	  <GenerateDocumentationFile>true</GenerateDocumentationFile>
+	  <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+	  <Title>TrixxInjection.Framework</Title>
+	  <Description>[ THIS PACKAGE IS NOT INTENDED TO BE USED AS A STANDALONE ] 
+Contains supporting user-end logic / functionality to control the weaver included in the parent package.</Description>
+	  <PackageOutputPath>$(SolutionDir)..\..\..\nugets.local</PackageOutputPath>
+	  <Version>1.0.8</Version>
+	  <PackageId>TrixxInjection.Framework</PackageId>
+	  <PackAsTool>false</PackAsTool>
+	  <IsPackable>true</IsPackable>
+  </PropertyGroup>
+
+
+  <Target Name="PreBuild" BeforeTargets="PreBuildEvent">
+    <Exec Command="call &quot;$(SolutionDir)SyncFiles.bat&quot;" />
+  </Target>
+</Project>

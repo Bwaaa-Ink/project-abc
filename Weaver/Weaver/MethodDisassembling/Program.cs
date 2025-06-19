@@ -3,7 +3,9 @@ using System.ComponentModel.Design;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
-using TrixxInjection;
+using TrixxInjection.Framework.Attributes;
+
+#pragma warning disable
 
 namespace MethodDisassembling
 {
@@ -24,13 +26,29 @@ namespace MethodDisassembling
         static void Main(string[] args)
         {
             Console.WriteLine("Hello, World!");
+            Bwaaa();
+            Thread.Sleep(2000);
+            Console.WriteLine("Bwaaaa");
+            Console.Read();
+            GC.Collect();
+        }
+
+        public static void Bwaaa()
+        {
             @class = new();
             @class.RunStopWatcher();
             AnEvent += (s) => { Console.WriteLine("Hmmmm"); };
+            @class = null;
+            var c2 = new Class2();
+            var c3 = new Class3();
+            c3.field = true;
+            c2 = null;
+            c3.field = false;
+            c3 = null;
+            Console.WriteLine("Set to null");
         }
 
-        [MethodLogger]
-        private static void M2()
+        public static void M2()
         {
             try
             {
@@ -70,30 +88,12 @@ namespace MethodDisassembling
         {
             b = a + ba.ToString();
         }
-
-        public class Class
-        {
-            public Class()
-            {
-                _ = "yo";
-                M2();
-            }
-
-            public void RunStopWatcher()
-            {
-                var stopwatcher = new Stopwatch();
-                stopwatcher.Start();
-                stopwatcher.Stop();
-                var ms = stopwatcher.ElapsedMilliseconds;
-                Console.WriteLine($"Stopwatch final time: {ms}");
-            }
-        }
     }
 
     [Flags]
     public enum Numbers
     {
-        One,
+        One = 1,
         Two,
         Three,
         Four,
@@ -104,6 +104,45 @@ namespace MethodDisassembling
         Nine,
         [An]
         Ten = 99
+    }
+
+    [Creation]
+    [Deletion]
+    public class Class
+    {
+        public Class()
+        {
+            _ = "yo";
+            Program.M2();
+        }
+
+        public void RunStopWatcher()
+        {
+            var stopwatcher = new Stopwatch();
+            stopwatcher.Start();
+            stopwatcher.Stop();
+            var ms = stopwatcher.ElapsedMilliseconds;
+            Console.WriteLine($"Stopwatch final time: {ms}");
+        }
+    }
+
+    [Creation]
+    [Deletion]
+    public class Class2
+    {
+        public bool field = false;
+    }
+
+    [Creation]
+    [Deletion]
+    public class Class3 : Class2
+    {
+        public new bool field = true;
+
+        ~Class3()
+        {
+            Console.WriteLine("Womp");
+        }
     }
 
     public class AnAttribute : Attribute;
